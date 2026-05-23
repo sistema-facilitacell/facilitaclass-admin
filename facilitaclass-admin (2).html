@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FacilitaClass — Painel Administrativo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#080808;--s1:#111;--s2:#191919;--s3:#222;
+  --border:#2a2a2a;--border2:#3a3a3a;
+  --or:#FF6500;--or2:#e55a00;--or-glow:rgba(255,101,0,.15);--or-faint:rgba(255,101,0,.06);
+  --txt:#f0f0f0;--txt2:#999;--txt3:#555;
+  --green:#22c55e;--red:#ef4444;--blue:#3b82f6;--purple:#a855f7;
+  --fd:'Bebas Neue',sans-serif;--fb:'Outfit',sans-serif;
+  --r:12px;--rs:8px;
+}
+body{background:var(--bg);color:var(--txt);font-family:var(--fb);min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+input,select,textarea{font-family:var(--fb)}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--or)}
+
+/* LOADING */
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:9998}
+.loading-logo{font-family:var(--fd);font-size:48px;letter-spacing:4px;color:var(--or)}
+.loading-logo span{color:var(--txt)}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--or);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-txt{font-size:12px;color:var(--txt3);letter-spacing:2px;text-transform:uppercase}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;display:none;align-items:stretch;overflow:hidden}
+.login-left{flex:1;background:var(--s1);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:60px;position:relative;overflow:hidden}
+.login-left::before{content:'';position:absolute;top:-60px;left:-60px;width:400px;height:400px;background:radial-gradient(circle,rgba(255,101,0,.12) 0%,transparent 70%);pointer-events:none}
+.login-left::after{content:'';position:absolute;bottom:-40px;right:-40px;width:300px;height:300px;background:radial-gradient(circle,rgba(255,101,0,.08) 0%,transparent 70%);pointer-events:none}
+.login-logo{font-family:var(--fd);font-size:52px;letter-spacing:4px;color:var(--or);line-height:1;margin-bottom:8px;position:relative;z-index:1}
+.login-logo span{color:var(--txt)}
+.login-tagline{font-size:13px;color:var(--txt2);letter-spacing:3px;text-transform:uppercase;position:relative;z-index:1;margin-bottom:48px}
+.login-portal-label{display:inline-flex;align-items:center;gap:8px;background:rgba(255,101,0,.1);border:1px solid rgba(255,101,0,.3);color:var(--or);border-radius:50px;padding:6px 16px;font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;position:relative;z-index:1;margin-bottom:32px}
+.login-illustration{position:relative;z-index:1;display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px}
+.feat-pill{display:flex;align-items:center;gap:12px;background:var(--s2);border:1px solid var(--border);border-radius:50px;padding:12px 18px;font-size:13px;color:var(--txt2)}
+.feat-pill .icon{width:32px;height:32px;background:var(--or-glow);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.feat-pill .icon svg{width:16px;height:16px;stroke:var(--or);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.login-right{width:440px;background:var(--bg);display:flex;flex-direction:column;justify-content:center;padding:60px 48px}
+.login-right h2{font-family:var(--fd);font-size:36px;letter-spacing:2px;color:var(--txt);margin-bottom:6px}
+.login-right .sub{font-size:13px;color:var(--txt2);margin-bottom:36px}
+.badge-adm{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:50px;font-size:12px;font-weight:600;background:rgba(255,101,0,.15);color:var(--or);border:1px solid rgba(255,101,0,.3);margin-bottom:28px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;color:var(--txt2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-group input{width:100%;background:var(--s1);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:12px 14px;font-size:14px;transition:.2s}
+.form-group input:focus{outline:none;border-color:var(--or);background:var(--or-faint)}
+.form-group input::placeholder{color:var(--txt3)}
+.btn-primary{width:100%;background:var(--or);color:#fff;border:none;border-radius:var(--rs);padding:13px;font-size:15px;font-weight:600;cursor:pointer;transition:.2s;margin-top:4px;font-family:var(--fb);letter-spacing:.5px}
+.btn-primary:hover{background:var(--or2)}
+.btn-primary:active{transform:scale(.98)}
+.login-err{color:var(--red);font-size:13px;margin-top:10px;display:none;padding:10px 14px;background:rgba(239,68,68,.08);border-radius:var(--rs);border:1px solid rgba(239,68,68,.2)}
+
+/* MAIN LAYOUT */
+#app-screen{display:none;height:100vh;flex-direction:column}
+.topbar{height:60px;background:var(--s1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:100}
+.topbar-logo{font-family:var(--fd);font-size:26px;letter-spacing:2px;color:var(--or)}
+.topbar-logo span{color:var(--txt)}
+.topbar-portal{font-size:11px;color:var(--txt3);letter-spacing:1.5px;text-transform:uppercase;border-left:1px solid var(--border);padding-left:16px;margin-left:4px}
+.topbar-user{margin-left:auto;display:flex;align-items:center;gap:12px}
+.user-badge{background:var(--s2);border:1px solid var(--border);border-radius:50px;padding:6px 14px;font-size:13px;display:flex;align-items:center;gap:8px}
+.user-dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.rt-live{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--green);background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:50px;padding:4px 12px}
+.rt-live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.btn-logout{background:none;border:1px solid var(--border);color:var(--txt2);border-radius:var(--rs);padding:7px 14px;font-size:12px;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.btn-logout:hover{border-color:var(--or);color:var(--or)}
+.main-body{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 12px;gap:4px;overflow-y:auto;flex-shrink:0}
+.sidebar-section{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1.5px;padding:16px 10px 8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rs);cursor:pointer;transition:.2s;font-size:14px;color:var(--txt2);border:1px solid transparent}
+.nav-item svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.nav-item:hover{background:var(--s2);color:var(--txt)}
+.nav-item.active{background:var(--or-glow);color:var(--or);border-color:rgba(255,101,0,.2)}
+.nav-badge{margin-left:auto;background:var(--or);color:#fff;border-radius:50px;padding:1px 7px;font-size:10px;font-weight:700;min-width:18px;text-align:center}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:28px}
+.page-header{margin-bottom:24px}
+.page-header h2{font-family:var(--fd);font-size:32px;letter-spacing:2px;color:var(--txt);margin-bottom:4px}
+.page-header p{font-size:14px;color:var(--txt2)}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:32px}
+.stat-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--or)}
+.stat-card.green::before{background:var(--green)}
+.stat-card.blue::before{background:var(--blue)}
+.stat-card.purple::before{background:var(--purple)}
+.stat-card .val{font-family:var(--fd);font-size:40px;letter-spacing:2px;color:var(--or);line-height:1}
+.stat-card.green .val{color:var(--green)}
+.stat-card.blue .val{color:var(--blue)}
+.stat-card.purple .val{color:var(--purple)}
+.stat-card .lbl{font-size:12px;color:var(--txt2);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.stat-card .sub-val{font-size:11px;color:var(--txt3);margin-top:4px}
+.stat-card .icon-bg{position:absolute;right:16px;top:50%;transform:translateY(-50%);opacity:.06}
+.stat-card .icon-bg svg{width:56px;height:56px;stroke:var(--or);fill:none;stroke-width:1.5}
+
+/* CARDS */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.material-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:.2s;cursor:pointer}
+.material-card:hover{border-color:var(--or);transform:translateY(-2px)}
+.card-thumb{height:160px;background:var(--s2);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.card-thumb.vid{background:linear-gradient(135deg,#1a0a00,#2a1000)}
+.card-thumb.pdf{background:linear-gradient(135deg,#0a0a1a,#0a102a)}
+.card-thumb svg{width:48px;height:48px;stroke:var(--or);fill:none;stroke-width:1.5;opacity:.7}
+.card-thumb .type-badge{position:absolute;top:12px;left:12px;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.card-thumb .type-badge.v{background:rgba(255,101,0,.2);color:var(--or);border:1px solid rgba(255,101,0,.3)}
+.card-thumb .type-badge.p{background:rgba(59,130,246,.2);color:#60a5fa;border:1px solid rgba(59,130,246,.3)}
+.card-thumb .viewers-badge{position:absolute;top:12px;right:12px;background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3);border-radius:50px;padding:3px 9px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px}
+.card-thumb .viewers-badge svg{width:12px;height:12px;stroke:var(--green);fill:none;stroke-width:2}
+.card-body{padding:16px}
+.card-body h3{font-size:15px;font-weight:600;color:var(--txt);margin-bottom:6px;line-height:1.3}
+.card-body p{font-size:12px;color:var(--txt2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-footer .date{font-size:11px;color:var(--txt3)}
+.btn-sm{background:var(--or);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.btn-sm:hover{background:var(--or2)}
+.btn-sm.outline{background:none;border:1px solid var(--border);color:var(--txt2)}
+.btn-sm.outline:hover{border-color:var(--or);color:var(--or)}
+
+/* ACTION BAR */
+.action-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.action-bar .left{display:flex;align-items:center;gap:10px}
+.btn-add{display:flex;align-items:center;gap:8px;background:var(--or);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.btn-add svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.btn-add:hover{background:var(--or2)}
+.btn-export{display:flex;align-items:center;gap:8px;background:var(--s2);color:var(--txt2);border:1px solid var(--border);border-radius:var(--rs);padding:9px 16px;font-size:13px;font-weight:500;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.btn-export svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-export:hover{border-color:var(--green);color:var(--green)}
+.filter-select{background:var(--s1);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:9px 12px;font-size:13px;cursor:pointer;font-family:var(--fb)}
+.filter-select:focus{outline:none;border-color:var(--or)}
+.search-input{background:var(--s2);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:8px 12px;font-size:13px;width:220px;font-family:var(--fb)}
+.search-input:focus{outline:none;border-color:var(--or)}
+
+/* TABLE */
+.table-wrap{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{background:var(--s2);padding:12px 20px;text-align:left;font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;font-weight:600}
+td{padding:14px 20px;border-bottom:1px solid var(--border);font-size:13px;color:var(--txt2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--s2);color:var(--txt)}
+.tag{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:.5px}
+.tag.store{background:var(--or-faint);color:var(--or);border:1px solid rgba(255,101,0,.2)}
+.tag.active{background:rgba(34,197,94,.08);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.tag.viewed{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.25);display:inline-flex;align-items:center;gap:4px}
+.tag.not-viewed{background:var(--s2);color:var(--txt3);border:1px solid var(--border)}
+.tag.partial{background:rgba(59,130,246,.08);color:var(--blue);border:1px solid rgba(59,130,246,.2)}
+.btn-icon{background:none;border:1px solid var(--border);color:var(--txt2);border-radius:6px;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.2s}
+.btn-icon:hover{border-color:var(--red);color:var(--red)}
+.btn-icon.blue:hover{border-color:var(--blue);color:var(--blue)}
+.btn-icon svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* PROGRESS BAR INLINE */
+.progress-inline{display:flex;align-items:center;gap:8px}
+.progress-track{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;min-width:60px}
+.progress-fill-green{height:100%;background:var(--green);border-radius:3px;transition:.4s}
+.progress-pct{font-size:11px;color:var(--txt2);min-width:28px;text-align:right}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:.2s}
+.modal-overlay.show{opacity:1;pointer-events:all}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;transform:scale(.95);transition:.2s}
+.modal-overlay.show .modal{transform:scale(1)}
+.modal-large{max-width:760px}
+.modal-xl{max-width:960px}
+.modal-head{padding:24px 24px 0;display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-family:var(--fd);font-size:26px;letter-spacing:1px;color:var(--txt)}
+.modal-close{background:var(--s2);border:1px solid var(--border);color:var(--txt2);border-radius:6px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0}
+.modal-close:hover{border-color:var(--red);color:var(--red)}
+.modal-close svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5}
+.modal-body{padding:20px 24px 24px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-input{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:11px 14px;font-size:14px;transition:.2s;font-family:var(--fb);margin-bottom:14px}
+.modal-input:focus{outline:none;border-color:var(--or);background:var(--or-faint)}
+.modal-input::placeholder{color:var(--txt3)}
+select.modal-input{cursor:pointer}
+textarea.modal-input{resize:vertical;min-height:90px;line-height:1.5}
+.modal-label{display:block;font-size:11px;color:var(--txt2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px}
+.modal-actions{display:flex;gap:10px;margin-top:4px}
+.btn-cancel{flex:1;background:var(--s2);border:1px solid var(--border);color:var(--txt2);border-radius:var(--rs);padding:12px;font-size:14px;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.btn-cancel:hover{border-color:var(--border2);color:var(--txt)}
+.btn-save{flex:2;background:var(--or);border:none;color:#fff;border-radius:var(--rs);padding:12px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.btn-save:hover{background:var(--or2)}
+.btn-save:disabled{opacity:.5;cursor:not-allowed}
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--r);padding:32px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:14px;background:var(--s2);position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--or);background:var(--or-faint)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone svg{width:32px;height:32px;stroke:var(--or);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 10px}
+.upload-zone p{font-size:13px;color:var(--txt2)}
+.upload-zone strong{color:var(--or)}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden;display:none}
+.progress-bar .fill{height:100%;background:var(--or);border-radius:2px;transition:.3s;width:0}
+.type-selector{display:flex;gap:8px;margin-bottom:16px}
+.type-opt{flex:1;padding:12px;border-radius:var(--rs);border:1px solid var(--border);background:var(--s2);cursor:pointer;text-align:center;transition:.2s}
+.type-opt:hover{border-color:var(--border2)}
+.type-opt.sel{border-color:var(--or);background:var(--or-faint)}
+.type-opt svg{width:24px;height:24px;stroke:var(--or);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 6px;display:block}
+.type-opt span{font-size:12px;font-weight:600;color:var(--txt2)}
+.type-opt.sel span{color:var(--or)}
+
+/* VIEWER */
+.viewer-body{padding:0}
+.viewer-info{padding:20px 24px;border-bottom:1px solid var(--border)}
+.viewer-info h2{font-family:var(--fd);font-size:28px;letter-spacing:1px;color:var(--txt);margin-bottom:6px}
+.viewer-info p{font-size:13px;color:var(--txt2);line-height:1.6}
+.viewer-player{background:#000}
+.viewer-player video{width:100%;display:block;max-height:400px}
+.viewer-player iframe{width:100%;height:400px;display:block;border:none}
+.viewer-player .pdf-embed{width:100%;height:500px;border:none;display:block}
+
+/* REPORTS */
+.report-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.view-row-watched td{background:rgba(34,197,94,.03)}
+.timestamp-cell{display:flex;flex-direction:column;gap:2px}
+.ts-date{font-size:13px;color:var(--txt)}
+.ts-time{font-size:11px;color:var(--txt3)}
+.mark-pill{display:inline-flex;align-items:center;gap:5px;border-radius:50px;padding:4px 11px;font-size:11px;font-weight:600}
+.mark-pill.done{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.25)}
+.mark-pill.pending{background:var(--s2);color:var(--txt3);border:1px solid var(--border)}
+.mark-pill svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.5}
+
+/* REORDER */
+.drag-handle{cursor:grab;color:var(--txt3);display:flex;align-items:center;padding:0 8px}
+.drag-handle:active{cursor:grabbing}
+.drag-handle svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+.reorder-item{display:flex;align-items:center;gap:12px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;transition:.15s;user-select:none}
+.reorder-item.drag-over{border-color:var(--or);background:var(--or-faint)}
+.reorder-item.dragging{opacity:.4}
+.reorder-num{font-family:var(--fd);font-size:20px;color:var(--or);width:28px;text-align:center;flex-shrink:0}
+.reorder-info{flex:1}
+.reorder-info .rt{font-size:13px;font-weight:600;color:var(--txt)}
+.reorder-info .rs{font-size:11px;color:var(--txt3);margin-top:2px}
+.btn-icon.edit:hover{border-color:var(--or);color:var(--or)}
+
+/* NOTIFICATION SETTINGS */
+.notif-section{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:20px}
+.notif-section h4{font-family:var(--fd);font-size:20px;letter-spacing:1px;color:var(--txt);margin-bottom:4px}
+.notif-section p{font-size:13px;color:var(--txt2);margin-bottom:16px}
+.notif-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.notif-row label{font-size:13px;color:var(--txt);flex:1}
+.notif-row input[type=text],.notif-row input[type=email],.notif-row input[type=tel]{flex:2;background:var(--s2);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:9px 12px;font-size:13px;font-family:var(--fb)}
+.notif-row input:focus{outline:none;border-color:var(--or)}
+.toggle-wrap{display:flex;align-items:center;gap:10px}
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--border2);border-radius:22px;cursor:pointer;transition:.25s}
+.toggle-slider:before{content:'';position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.25s}
+.toggle input:checked+.toggle-slider{background:var(--or)}
+.toggle input:checked+.toggle-slider:before{transform:translateX(18px)}
+
+.st-detail-header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding:16px;background:var(--s2);border-radius:var(--r);border:1px solid var(--border)}
+.st-detail-avatar{width:48px;height:48px;border-radius:50%;background:var(--or-glow);border:2px solid rgba(255,101,0,.3);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:20px;color:var(--or);flex-shrink:0}
+.st-detail-info h4{font-size:16px;font-weight:600;color:var(--txt)}
+.st-detail-info p{font-size:12px;color:var(--txt2);margin-top:2px}
+.st-detail-stats{margin-left:auto;display:flex;gap:16px}
+.st-mini-stat{text-align:center}
+.st-mini-stat .v{font-family:var(--fd);font-size:24px;color:var(--or)}
+.st-mini-stat .l{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
+.mat-view-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.mat-view-item:last-child{border-bottom:none}
+.mat-type-icon{width:36px;height:36px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mat-type-icon.vid{background:rgba(255,101,0,.1)}
+.mat-type-icon.pdf{background:rgba(59,130,246,.1)}
+.mat-type-icon svg{width:18px;height:18px;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.mat-type-icon.vid svg{stroke:var(--or)}
+.mat-type-icon.pdf svg{stroke:#60a5fa}
+.mat-view-name{flex:1;font-size:13px;color:var(--txt);font-weight:500}
+.mat-view-ts{font-size:11px;color:var(--txt3);text-align:right;line-height:1.6}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:80px 20px;color:var(--txt3)}
+.empty-state svg{width:64px;height:64px;stroke:var(--border2);fill:none;stroke-width:1.2;margin:0 auto 16px;display:block}
+.empty-state p{font-size:14px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);padding:12px 18px;font-size:13px;color:var(--txt);display:flex;align-items:center;gap:10px;z-index:9999;transform:translateY(80px);opacity:0;transition:.3s;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.toast.show{transform:translateY(0);opacity:1}
+.t-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.t-dot.ok{background:var(--green)}
+.t-dot.err{background:var(--red)}
+
+
+/* CATEGORIAS / TAGS DE MATERIAL */
+.cat-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cat-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:600;letter-spacing:.3px;border:1px solid}
+.cat-chip.atendimento{background:rgba(59,130,246,.12);color:#60a5fa;border-color:rgba(59,130,246,.3)}
+.cat-chip.produto{background:rgba(168,85,247,.12);color:#c084fc;border-color:rgba(168,85,247,.3)}
+.cat-chip.seguranca{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.3)}
+.cat-chip.operacional{background:rgba(251,191,36,.12);color:#fbbf24;border-color:rgba(251,191,36,.3)}
+.cat-chip.rh{background:rgba(20,184,166,.12);color:#2dd4bf;border-color:rgba(20,184,166,.3)}
+.cat-chip.outro{background:var(--s2);color:var(--txt2);border-color:var(--border)}
+.cat-chip svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2.5}
+.filter-chip-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:16px}
+.filter-chip{padding:5px 12px;border-radius:50px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--s2);color:var(--txt2);cursor:pointer;transition:.2s}
+.filter-chip:hover{border-color:var(--border2);color:var(--txt)}
+.filter-chip.active{background:var(--or-faint);border-color:rgba(255,101,0,.4);color:var(--or)}
+.cat-select-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.cat-opt{padding:8px 10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--s2);cursor:pointer;text-align:center;font-size:12px;font-weight:500;color:var(--txt2);transition:.2s;user-select:none}
+.cat-opt:hover{border-color:var(--border2);color:var(--txt)}
+.cat-opt.sel{border-color:var(--or);background:var(--or-faint);color:var(--or)}
+
+/* CANAL DE DÚVIDAS — ADMIN */
+.questions-list{display:flex;flex-direction:column;gap:12px}
+.q-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:.2s}
+.q-card.unanswered{border-color:rgba(255,101,0,.35)}
+.q-card-head{padding:14px 18px;display:flex;align-items:flex-start;gap:12px;cursor:pointer}
+.q-card-head:hover{background:var(--s2)}
+.q-avatar{width:36px;height:36px;border-radius:50%;background:var(--or-glow);border:1px solid rgba(255,101,0,.25);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:14px;color:var(--or);flex-shrink:0}
+.q-meta{flex:1;min-width:0}
+.q-name{font-size:13px;font-weight:600;color:var(--txt)}
+.q-sub{font-size:11px;color:var(--txt3);margin-top:1px}
+.q-text{font-size:13px;color:var(--txt2);margin-top:6px;line-height:1.5}
+.q-status-pill{padding:3px 10px;border-radius:50px;font-size:10px;font-weight:700;letter-spacing:.5px;white-space:nowrap;flex-shrink:0}
+.q-status-pill.pending{background:rgba(255,101,0,.12);color:var(--or);border:1px solid rgba(255,101,0,.3)}
+.q-status-pill.answered{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.25)}
+.q-answer-area{border-top:1px solid var(--border);padding:14px 18px;background:var(--s2);display:none}
+.q-answer-area.open{display:block}
+.q-existing-answer{background:var(--s1);border:1px solid rgba(34,197,94,.2);border-radius:var(--rs);padding:12px 14px;margin-bottom:12px}
+.q-existing-answer .ans-label{font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:6px}
+.q-existing-answer .ans-txt{font-size:13px;color:var(--txt2);line-height:1.5}
+.q-existing-answer .ans-ts{font-size:10px;color:var(--txt3);margin-top:6px}
+.q-reply-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:10px 12px;font-size:13px;font-family:var(--fb);resize:vertical;min-height:72px;transition:.2s;margin-bottom:10px}
+.q-reply-input:focus{outline:none;border-color:var(--or);background:var(--or-faint)}
+.q-reply-btn{background:var(--or);color:#fff;border:none;border-radius:var(--rs);padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--fb);transition:.2s}
+.q-reply-btn:hover{background:var(--or2)}
+.q-reply-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .login-left{display:none}
+  .login-right{width:100%;padding:40px 24px}
+  .sidebar{width:60px;padding:12px 8px}
+  .sidebar-section,.nav-item span,.nav-badge{display:none}
+  .nav-item{justify-content:center;padding:12px}
+  .form-row{grid-template-columns:1fr}
+  .topbar-portal{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen" class="loading-screen">
+  <div class="loading-logo">Facilita<span>Class</span></div>
+  <div class="spinner"></div>
+  <div class="loading-txt">Painel Administrativo</div>
+</div>
+
+<!-- LOGIN ADMIN -->
+<div id="login-screen">
+  <div class="login-left">
+    <div class="login-logo">Facilita<span>Class</span></div>
+    <div class="login-tagline">Painel Administrativo</div>
+    <div class="login-portal-label">
+      <span class="shield-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+      Acesso Restrito
+    </div>
+    <div class="login-illustration">
+      <div class="feat-pill">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <span>Gestão completa da plataforma</span>
+      </div>
+      <div class="feat-pill">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+        <span>Cadastro de colaboradores</span>
+      </div>
+      <div class="feat-pill">
+        <div class="icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <span>Relatório de visualizações</span>
+      </div>
+    </div>
+  </div>
+  <div class="login-right">
+    <h2>ÁREA DO ADM</h2>
+    <p class="sub">Acesse o painel de administração</p>
+    <div class="badge-adm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Administrador
+    </div>
+    <div class="form-group">
+      <label>CPF / Login</label>
+      <input type="text" id="admin-user" placeholder="Digite seu CPF ou login" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="admin-pass" placeholder="Digite sua senha" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Entrar como Administrador →</button>
+    <div class="login-err" id="login-err">Login ou senha incorretos.</div>
+  </div>
+</div>
+
+<!-- APP ADMIN -->
+<div id="app-screen" style="flex-direction:column">
+  <div class="topbar">
+    <div class="topbar-logo">Facilita<span>Class</span></div>
+    <span class="topbar-portal">Painel Administrativo</span>
+    <div class="topbar-user">
+      <div class="rt-live"><div class="rt-live-dot"></div>Tempo Real</div>
+      <div class="user-badge"><div class="user-dot"></div><span id="topbar-name">Administrador</span></div>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+  <div class="main-body">
+    <div class="sidebar">
+      <div class="sidebar-section">Menu</div>
+      <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item" onclick="showPage('materials')" id="nav-materials">
+        <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        <span>Materiais</span>
+      </div>
+      <div class="nav-item" onclick="showPage('students')" id="nav-students">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        <span>Colaboradores</span>
+      </div>
+      <div class="nav-item" onclick="showPage('reports')" id="nav-reports">
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Relatórios</span>
+        <span class="nav-badge" id="reports-badge" style="display:none">0</span>
+      </div>
+      <div class="nav-item" onclick="showPage('questions')" id="nav-questions">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span>Dúvidas</span>
+        <span class="nav-badge" id="questions-badge" style="display:none">0</span>
+      </div>
+      <div class="nav-item" onclick="showPage('notifications')" id="nav-notifications">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span>Notificações</span>
+      </div>
+    </div>
+    <div class="content" id="page-content"></div>
+  </div>
+</div>
+
+<!-- MODAL: NOVO COLABORADOR -->
+<div class="modal-overlay" id="modal-student">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>NOVO COLABORADOR</h3>
+      <button class="modal-close" onclick="closeModal('modal-student')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <label class="modal-label">Nome completo</label>
+      <input class="modal-input" id="st-name" placeholder="Ex: João Silva">
+      <div class="form-row">
+        <div>
+          <label class="modal-label">Login (CPF ou código)</label>
+          <input class="modal-input" id="st-login" placeholder="CPF ou código">
+        </div>
+        <div>
+          <label class="modal-label">Senha</label>
+          <input class="modal-input" id="st-pass" type="password" placeholder="Senha de acesso">
+        </div>
+      </div>
+      <label class="modal-label">Nome da Loja / Empresa</label>
+      <input class="modal-input" id="st-store" placeholder="Ex: Loja Centro SP">
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('modal-student')">Cancelar</button>
+        <button class="btn-save" onclick="saveStudent()">Cadastrar Colaborador</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NOVO MATERIAL -->
+<div class="modal-overlay" id="modal-material">
+  <div class="modal modal-large">
+    <div class="modal-head">
+      <h3>NOVO MATERIAL</h3>
+      <button class="modal-close" onclick="closeModal('modal-material')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <label class="modal-label">Tipo de material</label>
+      <div class="type-selector">
+        <div class="type-opt sel" id="type-video" onclick="selectMaterialType('video')">
+          <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          <span>Vídeo</span>
+        </div>
+        <div class="type-opt" id="type-pdf" onclick="selectMaterialType('pdf')">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>PDF</span>
+        </div>
+      </div>
+      <label class="modal-label">Título do material</label>
+      <input class="modal-input" id="mat-title" placeholder="Ex: Treinamento de Atendimento ao Cliente">
+      <label class="modal-label">Descrição</label>
+      <textarea class="modal-input" id="mat-desc" placeholder="Descreva o conteúdo e objetivos de aprendizado..."></textarea>
+      <label class="modal-label">Categoria</label>
+      <div class="cat-select-grid" id="cat-select-grid">
+        <div class="cat-opt sel" data-cat="atendimento" onclick="selectCat(this)">📞 Atendimento</div>
+        <div class="cat-opt" data-cat="produto" onclick="selectCat(this)">📦 Produto</div>
+        <div class="cat-opt" data-cat="seguranca" onclick="selectCat(this)">🔒 Segurança</div>
+        <div class="cat-opt" data-cat="operacional" onclick="selectCat(this)">⚙️ Operacional</div>
+        <div class="cat-opt" data-cat="rh" onclick="selectCat(this)">👥 RH</div>
+        <div class="cat-opt" data-cat="outro" onclick="selectCat(this)">📌 Outro</div>
+      </div>
+      <label class="modal-label">Tags (separadas por vírgula)</label>
+      <input class="modal-input" id="mat-tags" placeholder="Ex: cliente, comunicação, técnicas">
+      <div id="upload-section">
+        <label class="modal-label">Arquivo</label>
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="mat-file" onchange="handleFileSelect(this)" accept="">
+          <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+          <p id="upload-txt"><strong>Clique ou arraste</strong> o arquivo aqui</p>
+        </div>
+        <div class="progress-bar" id="upload-progress"><div class="fill" id="progress-fill"></div></div>
+        <p style="font-size:11px;color:var(--txt3);text-align:center;margin-top:-8px;margin-bottom:14px">— ou —</p>
+        <label class="modal-label">Cole uma URL (YouTube, Drive, etc.)</label>
+        <input class="modal-input" id="mat-url" placeholder="https://...">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('modal-material')">Cancelar</button>
+        <button class="btn-save" id="btn-save-mat" onclick="saveMaterial()">Publicar Material</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDITAR MATERIAL -->
+<div class="modal-overlay" id="modal-edit-material">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>EDITAR MATERIAL</h3>
+      <button class="modal-close" onclick="closeModal('modal-edit-material')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <label class="modal-label">Título</label>
+      <input class="modal-input" id="edit-title" placeholder="Título do material">
+      <label class="modal-label">Descrição</label>
+      <textarea class="modal-input" id="edit-desc" placeholder="Descrição do material..." rows="3"></textarea>
+      <label class="modal-label">Categoria</label>
+      <div class="cat-select-grid" id="edit-cat-grid">
+        <div class="cat-opt" data-cat="atendimento" onclick="selectEditCat(this)">📞 Atendimento</div>
+        <div class="cat-opt" data-cat="produto" onclick="selectEditCat(this)">📦 Produto</div>
+        <div class="cat-opt" data-cat="seguranca" onclick="selectEditCat(this)">🔒 Segurança</div>
+        <div class="cat-opt" data-cat="operacional" onclick="selectEditCat(this)">⚙️ Operacional</div>
+        <div class="cat-opt" data-cat="rh" onclick="selectEditCat(this)">👥 RH</div>
+        <div class="cat-opt" data-cat="outro" onclick="selectEditCat(this)">📌 Outro</div>
+      </div>
+      <label class="modal-label" style="margin-top:14px">Tags (separadas por vírgula)</label>
+      <input class="modal-input" id="edit-tags" placeholder="Ex: cliente, comunicação, técnicas">
+      <input type="hidden" id="edit-mat-id">
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('modal-edit-material')">Cancelar</button>
+        <button class="btn-save" id="btn-save-edit" onclick="saveEditMaterial()">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: REORDENAR MATERIAIS -->
+<div class="modal-overlay" id="modal-reorder">
+  <div class="modal modal-large">
+    <div class="modal-head">
+      <h3>REORDENAR MATERIAIS</h3>
+      <button class="modal-close" onclick="closeModal('modal-reorder')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--txt2);margin-bottom:16px">Arraste os materiais para definir a ordem de exibição na trilha de aprendizado.</p>
+      <div id="reorder-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div class="modal-actions" style="margin-top:20px">
+        <button class="btn-cancel" onclick="closeModal('modal-reorder')">Cancelar</button>
+        <button class="btn-save" onclick="saveOrder()">Salvar Ordem</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: VIEWER (ADMIN PREVIEW) -->
+<div class="modal-overlay" id="modal-viewer">
+  <div class="modal modal-large">
+    <div class="modal-head">
+      <h3 id="view-title">Material</h3>
+      <button class="modal-close" onclick="closeViewer()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="viewer-body" id="viewer-content"></div>
+  </div>
+</div>
+
+<!-- MODAL: DETALHE DO COLABORADOR -->
+<div class="modal-overlay" id="modal-student-detail">
+  <div class="modal modal-large">
+    <div class="modal-head">
+      <h3>HISTÓRICO DO COLABORADOR</h3>
+      <button class="modal-close" onclick="closeModal('modal-student-detail')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="student-detail-body"></div>
+  </div>
+</div>
+
+<!-- MODAL: DETALHE DO MATERIAL (quem viu) -->
+<div class="modal-overlay" id="modal-mat-detail">
+  <div class="modal modal-large">
+    <div class="modal-head">
+      <h3 id="mat-detail-title">QUEM VIU</h3>
+      <button class="modal-close" onclick="closeModal('modal-mat-detail')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="mat-detail-body"></div>
+  </div>
+</div>
+
+<!-- MODAL: DÚVIDAS (detalhes de resposta inline via cards, sem modal) -->
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="t-dot ok" id="toast-dot"></div>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════
+const S = {
+  user: null,
+  materials: [],
+  students: [],
+  views: {},       // { studentId: { materialId: { viewedAt, markedAt, marked, type } } }
+  certificates: {}, // { studentId: { certId, issuedAt, materialsCount, store } }
+  currentPage: 'dashboard',
+  selectedType: 'video',
+  selectedFile: null,
+  db: null,
+  storage: null,
+  firebaseOk: false,
+  materialsListener: null,
+  studentsListener: null,
+  viewsListener: null,
+  questionsListener: null,
+  questions: [],
+  selectedCategory: 'atendimento'
+};
+
+const ADMIN_LOGIN = '03818244200';
+const ADMIN_PASS  = '218939';
+
+// ═══════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════
+(function initFirebase(){
+  const cfg = {
+    apiKey:            "AIzaSyD6-t4lcHkgBFa_rBplGfa5838XeinaGAE",
+    authDomain:        "facilitaclass-b2d76.firebaseapp.com",
+    projectId:         "facilitaclass-b2d76",
+    storageBucket:     "facilitaclass-b2d76.firebasestorage.app",
+    messagingSenderId: "425346397754",
+    appId:             "1:425346397754:web:be7fa11e3bdf88f05f2703",
+    databaseURL:       "https://facilitaclass-b2d76-default-rtdb.firebaseio.com"
+  };
+  try {
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    S.db      = firebase.database();
+    S.storage = firebase.storage();
+    S.firebaseOk = true;
+  } catch(e){ console.error('Firebase init error:', e); }
+})();
+
+// ─── Helpers ───
+function $(id){ return document.getElementById(id); }
+
+function toast(msg, type='ok'){
+  const t = $('toast');
+  $('toast-msg').textContent = msg;
+  $('toast-dot').className = 't-dot ' + (type==='ok' ? 'ok' : 'err');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function openModal(id){ $(id).classList.add('show'); }
+function closeModal(id){ $(id).classList.remove('show'); }
+
+function fmtDate(ts){
+  if(!ts) return '';
+  return new Date(typeof ts === 'number' ? ts : ts).toLocaleDateString('pt-BR');
+}
+
+function fmtDateTime(ts){
+  if(!ts) return { date:'—', time:'—' };
+  const d = new Date(typeof ts === 'number' ? ts : ts);
+  return {
+    date: d.toLocaleDateString('pt-BR'),
+    time: d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })
+  };
+}
+
+function svgIcon(type){
+  if(type==='video') return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>`;
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+}
+
+// ─── Contagem de visualizações ───
+function countViewsForMaterial(matId){
+  let total=0, marked=0;
+  for(const stId in S.views){
+    const mv = S.views[stId]?.[matId];
+    if(mv){ total++; if(mv.marked) marked++; }
+  }
+  return { total, marked };
+}
+
+function countViewsForStudent(stId){
+  const stViews = S.views[stId] || {};
+  const total = Object.keys(stViews).length;
+  const marked = Object.values(stViews).filter(v=>v.marked).length;
+  return { total, marked };
+}
+
+function getTotalMarked(){
+  let n=0;
+  for(const stId in S.views)
+    for(const matId in S.views[stId])
+      if(S.views[stId][matId].marked) n++;
+  return n;
+}
+
+// ─── Badge na nav ───
+function updateQuestionsBadge(){
+  const badge = $('questions-badge');
+  if(!badge) return;
+  const n = S.questions.filter(q=>!q.answer).length;
+  if(n > 0){ badge.textContent = n > 99 ? '99+' : n; badge.style.display='inline-block'; }
+  else badge.style.display='none';
+}
+
+function updateReportsBadge(){
+  const badge = $('reports-badge');
+  if(!badge) return;
+  const n = getTotalMarked();
+  if(n > 0){ badge.textContent = n > 99 ? '99+' : n; badge.style.display='inline-block'; }
+  else badge.style.display='none';
+}
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+function doLogin(){
+  const user = $('admin-user').value.trim().replace(/\D/g,'') || $('admin-user').value.trim();
+  const pass = $('admin-pass').value.trim();
+  const errEl = $('login-err');
+  errEl.style.display = 'none';
+  if(!user || !pass){ toast('Preencha login e senha','err'); return; }
+  if(user === ADMIN_LOGIN && pass === ADMIN_PASS){
+    S.user = { name: 'Administrador', login: user };
+    enterApp();
+  } else {
+    errEl.style.display = 'block';
+    errEl.textContent = 'Login ou senha de administrador incorretos.';
+  }
+}
+
+function enterApp(){
+  $('login-screen').style.display = 'none';
+  const app = $('app-screen');
+  app.style.display = 'flex';
+  $('topbar-name').textContent = 'Administrador';
+  startRealtimeListeners();
+  showPage('dashboard');
+}
+
+function doLogout(){
+  stopRealtimeListeners();
+  S.user=null; S.materials=[]; S.students=[]; S.views={}; S.certificates={};
+  $('app-screen').style.display='none';
+  $('admin-user').value='';
+  $('admin-pass').value='';
+  $('login-err').style.display='none';
+  $('login-screen').style.display='flex';
+}
+
+// ═══════════════════════════════════════════
+// REALTIME LISTENERS
+// ═══════════════════════════════════════════
+function startRealtimeListeners(){
+  if(!S.firebaseOk) return;
+
+  const matRef = S.db.ref('materials');
+  matRef.orderByChild('createdAt').on('value', snap => {
+    const arr = [];
+    snap.forEach(child => arr.unshift({ id: child.key, ...child.val() }));
+    // Sort by 'order' field if set, otherwise by createdAt (most recent first)
+    arr.sort((a,b)=>{
+      const ao = a.order !== undefined ? a.order : 999999;
+      const bo = b.order !== undefined ? b.order : 999999;
+      if(ao !== bo) return ao - bo;
+      return (b.createdAt||0) - (a.createdAt||0);
+    });
+    S.materials = arr;
+    renderCurrentPage();
+  });
+  S.materialsListener = () => matRef.off();
+
+  const stRef = S.db.ref('students');
+  stRef.on('value', snap => {
+    const arr = [];
+    snap.forEach(child => arr.push({ id: child.key, ...child.val() }));
+    S.students = arr;
+    renderCurrentPage();
+  });
+  S.studentsListener = () => stRef.off();
+
+  // VIEWS LISTENER — estrutura: views/{studentId}/{materialId}
+  const vRef = S.db.ref('views');
+  vRef.on('value', snap => {
+    S.views = snap.val() || {};
+    updateReportsBadge();
+    renderCurrentPage();
+  });
+  S.viewsListener = () => vRef.off();
+
+  // CERTIFICATES LISTENER — estrutura: certificates/{studentId}
+  const cRef = S.db.ref('certificates');
+  cRef.on('value', snap => {
+    S.certificates = snap.val() || {};
+    renderCurrentPage();
+  });
+  S.certificatesListener = () => cRef.off();
+
+  // QUESTIONS LISTENER — estrutura: questions/{questionId}
+  const qRef = S.db.ref('questions').orderByChild('createdAt');
+  qRef.on('value', snap => {
+    const arr = [];
+    snap.forEach(c => arr.unshift({ id: c.key, ...c.val() }));
+    S.questions = arr;
+    updateQuestionsBadge();
+    if(S.currentPage==='questions') renderQuestionsPage();
+  });
+  S.questionsListener = () => qRef.off();
+}
+
+function stopRealtimeListeners(){
+  if(S.materialsListener){ S.materialsListener(); S.materialsListener=null; }
+  if(S.studentsListener) { S.studentsListener();  S.studentsListener=null;  }
+  if(S.viewsListener)    { S.viewsListener();     S.viewsListener=null;     }
+  if(S.certificatesListener){ S.certificatesListener(); S.certificatesListener=null; }
+  if(S.questionsListener){ S.questionsListener(); S.questionsListener=null; }
+}
+
+// ═══════════════════════════════════════════
+// NAVEGAÇÃO
+// ═══════════════════════════════════════════
+function showPage(page){
+  S.currentPage = page;
+  ['dashboard','materials','students','reports','questions','notifications'].forEach(p => {
+    const el = $('nav-'+p); if(el) el.classList.toggle('active', p===page);
+  });
+  renderCurrentPage();
+}
+
+function renderCurrentPage(){
+  const el = $('page-content'); if(!el) return;
+  if(S.currentPage==='dashboard')  el.innerHTML = renderDashboard();
+  else if(S.currentPage==='materials') el.innerHTML = renderMaterials();
+  else if(S.currentPage==='students')  el.innerHTML = renderStudents();
+  else if(S.currentPage==='reports')   el.innerHTML = renderReports();
+  else if(S.currentPage==='questions') renderQuestionsPage();
+  else if(S.currentPage==='notifications') el.innerHTML = renderNotifications();
+}
+
+// ═══════════════════════════════════════════
+// PAGE — DASHBOARD
+// ═══════════════════════════════════════════
+function renderDashboard(){
+  const vids = S.materials.filter(m=>m.type==='video').length;
+  const pdfs = S.materials.filter(m=>m.type==='pdf').length;
+  const totalMarked = getTotalMarked();
+  const totalViews = Object.values(S.views).reduce((a,sv)=>a+Object.keys(sv||{}).length,0);
+  const totalCerts = Object.keys(S.certificates).length;
+  const recents = S.materials.slice(0,4);
+
+  // Top 3 materials por visualizações
+  const matViewCounts = S.materials.map(m=>{
+    const {total,marked} = countViewsForMaterial(m.id);
+    return {m, total, marked};
+  }).sort((a,b)=>b.total-a.total).slice(0,3);
+
+  return `
+  <div class="page-header">
+    <h2>DASHBOARD</h2>
+    <p>Visão geral da plataforma FacilitaClass — dados em tempo real</p>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="val">${S.materials.length}</div>
+      <div class="lbl">Materiais</div>
+      <div class="icon-bg"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+    </div>
+    <div class="stat-card">
+      <div class="val">${S.students.length}</div>
+      <div class="lbl">Colaboradores</div>
+      <div class="icon-bg"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+    </div>
+    <div class="stat-card green">
+      <div class="val">${totalViews}</div>
+      <div class="lbl">Visualizações</div>
+      <div class="sub-val">${totalMarked} confirmadas</div>
+      <div class="icon-bg"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+    </div>
+    <div class="stat-card blue">
+      <div class="val">${vids}</div>
+      <div class="lbl">Vídeos</div>
+      <div class="icon-bg"><svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+    </div>
+    <div class="stat-card purple">
+      <div class="val">${pdfs}</div>
+      <div class="lbl">PDFs</div>
+      <div class="icon-bg"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg></div>
+    </div>
+    <div class="stat-card green">
+      <div class="val">${totalCerts}</div>
+      <div class="lbl">Certificados emitidos</div>
+      <div class="sub-val">${S.students.length>0?Math.round(totalCerts/S.students.length*100):0}% dos colaboradores</div>
+      <div class="icon-bg"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+    </div>
+  </div>
+
+  ${matViewCounts.length ? `
+  <div class="page-header" style="margin-top:8px;margin-bottom:16px">
+    <h2 style="font-size:20px">MATERIAIS MAIS ACESSADOS</h2>
+  </div>
+  <div class="table-wrap" style="margin-bottom:32px">
+    <table>
+      <thead><tr><th>Material</th><th>Tipo</th><th>Visualizações</th><th>Confirmados</th><th>Taxa</th></tr></thead>
+      <tbody>
+      ${matViewCounts.map(({m,total,marked})=>{
+        const pct = S.students.length>0 ? Math.round(total/S.students.length*100) : 0;
+        return `<tr>
+          <td style="font-weight:500;color:var(--txt)">${m.title}</td>
+          <td><span class="tag ${m.type==='video'?'store':'partial'}">${m.type==='video'?'VIDEO':'PDF'}</span></td>
+          <td style="color:var(--txt)">${total} <span style="color:var(--txt3);font-size:11px">/ ${S.students.length}</span></td>
+          <td><span class="mark-pill done"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>${marked}</span></td>
+          <td>
+            <div class="progress-inline">
+              <div class="progress-track"><div class="progress-fill-green" style="width:${pct}%"></div></div>
+              <span class="progress-pct">${pct}%</span>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>
+  </div>` : ''}
+
+  <div class="page-header" style="margin-top:8px;margin-bottom:20px">
+    <h2 style="font-size:20px">MATERIAIS RECENTES</h2>
+  </div>
+  ${recents.length
+    ? `<div class="cards-grid">${recents.map(m=>matCard(m,false)).join('')}</div>`
+    : `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg><p>Nenhum material publicado ainda.</p></div>`}
+  `;
+}
+
+// ═══════════════════════════════════════════
+// PAGE — MATERIAIS
+// ═══════════════════════════════════════════
+function renderMaterials(){
+  return `
+  <div class="page-header"><h2>MATERIAIS</h2><p>Gerencie os conteúdos — atualizações em tempo real</p></div>
+  <div class="action-bar">
+    <div class="left">
+      <button class="btn-add" onclick="openModal('modal-material')">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo Material
+      </button>
+      <button class="btn-export" onclick="openReorderModal()" style="display:flex;align-items:center;gap:8px">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Reordenar
+      </button>
+      <select class="filter-select" id="filter-type-mat" onchange="filterMaterials()">
+        <option value="all">Todos os tipos</option>
+        <option value="video">Somente Vídeos</option>
+        <option value="pdf">Somente PDFs</option>
+      </select>
+      <select class="filter-select" id="filter-cat-mat" onchange="filterMaterials()">
+        <option value="all">Todas as categorias</option>
+        <option value="atendimento">📞 Atendimento</option>
+        <option value="produto">📦 Produto</option>
+        <option value="seguranca">🔒 Segurança</option>
+        <option value="operacional">⚙️ Operacional</option>
+        <option value="rh">👥 RH</option>
+        <option value="outro">📌 Outro</option>
+      </select>
+    </div>
+    <span style="font-size:13px;color:var(--txt2)">${S.materials.length} material(is)</span>
+  </div>
+  ${S.materials.length
+    ? `<div class="cards-grid" id="mat-grid">${S.materials.map(m=>matCard(m,true)).join('')}</div>`
+    : `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg><p>Nenhum material. Clique em "Novo Material".</p></div>`}
+  `;
+}
+
+function filterMaterials(){
+  const grid = $('mat-grid'); if(!grid) return;
+  const typeVal = $('filter-type-mat')?.value || 'all';
+  const catVal  = $('filter-cat-mat')?.value  || 'all';
+  let filtered = S.materials;
+  if(typeVal !== 'all') filtered = filtered.filter(m=>m.type===typeVal);
+  if(catVal  !== 'all') filtered = filtered.filter(m=>(m.category||'outro')===catVal);
+  grid.innerHTML = filtered.length ? filtered.map(m=>matCard(m,true)).join('') : '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--txt3);font-size:14px">Nenhum material nessa categoria.</div>';
+}
+
+function matCard(m, showDel=false){
+  const isV = m.type==='video';
+  const {total, marked} = countViewsForMaterial(m.id);
+  return `<div class="material-card">
+    <div class="card-thumb ${isV?'vid':'pdf'}">
+      ${svgIcon(m.type)}
+      <div class="card-thumb type-badge ${isV?'v':'p'}">${isV?'VIDEO':'PDF'}</div>
+      ${total>0?`<div class="viewers-badge"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>${total} ${total===1?'viu':'viram'}</div>`:''}
+    </div>
+    <div class="card-body">
+      <h3>${m.title}</h3>
+      <p>${m.description||'Sem descrição.'}</p>
+      ${m.category ? `<div class="cat-chips" style="margin-top:8px">${catChip(m.category)}${(m.tags||[]).slice(0,2).map(t=>`<span style="font-size:10px;color:var(--txt3);background:var(--s2);padding:2px 8px;border-radius:50px;border:1px solid var(--border)">${t}</span>`).join('')}</div>` : ''}
+    </div>
+    <div class="card-footer">
+      <span class="date">${fmtDate(m.createdAt)}</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${total>0?`<button class="btn-sm outline" onclick="event.stopPropagation();showMatDetail('${m.id}')">Ver quem viu</button>`:''}
+        ${showDel?`<button class="btn-icon edit" onclick="event.stopPropagation();openEditMaterial('${m.id}')" title="Editar"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>`:''}
+        ${showDel?`<button class="btn-icon" onclick="event.stopPropagation();deleteMaterial('${m.id}')" title="Excluir"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>`:''}
+        <button class="btn-sm" onclick="viewMaterial('${m.id}')">Acessar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════
+// PAGE — COLABORADORES
+// ═══════════════════════════════════════════
+function renderStudents(){
+  return `
+  <div class="page-header"><h2>COLABORADORES</h2><p>Gerencie os colaboradores — tempo real</p></div>
+  <div class="action-bar">
+    <div class="left">
+      <button class="btn-add" onclick="openModal('modal-student')">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo Colaborador
+      </button>
+    </div>
+    <input class="search-input" placeholder="Buscar colaborador..." oninput="searchStudents(this.value)">
+  </div>
+  <div class="table-wrap">
+    <table id="students-table">
+      <thead><tr>
+        <th>Nome</th><th>Login</th><th>Loja / Empresa</th><th>Materiais Vistos</th><th>Progresso</th><th>Certificado</th><th>Ações</th>
+      </tr></thead>
+      <tbody>${S.students.length ? S.students.map(stRow).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:40px">Nenhum colaborador cadastrado.</td></tr>'}</tbody>
+    </table>
+  </div>`;
+}
+
+function stRow(s){
+  const {total, marked} = countViewsForStudent(s.id);
+  const totalMats = S.materials.length;
+  const pct = totalMats>0 ? Math.round(total/totalMats*100) : 0;
+  const cert = S.certificates[s.id];
+  const certHtml = cert
+    ? `<span class="tag viewed" style="white-space:nowrap">
+        <svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:var(--green);fill:none;stroke-width:2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Emitido ${fmtDate(cert.issuedAt)}
+       </span>`
+    : `<span style="font-size:12px;color:var(--txt3)">—</span>`;
+  return `<tr>
+    <td style="font-weight:500;color:var(--txt)">${s.name}</td>
+    <td><code style="background:var(--s2);padding:3px 8px;border-radius:4px;font-size:12px">${s.login}</code></td>
+    <td><span class="tag store">${s.store}</span></td>
+    <td>
+      <span style="color:var(--txt);font-weight:500">${total}</span>
+      <span style="color:var(--txt3);font-size:11px"> / ${totalMats}</span>
+      ${marked>0?`<span class="mark-pill done" style="margin-left:6px"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>${marked} conf.</span>`:''}
+    </td>
+    <td style="min-width:120px">
+      <div class="progress-inline">
+        <div class="progress-track"><div class="progress-fill-green" style="width:${pct}%"></div></div>
+        <span class="progress-pct">${pct}%</span>
+      </div>
+    </td>
+    <td>${certHtml}</td>
+    <td style="display:flex;gap:6px;align-items:center">
+      <button class="btn-icon blue" onclick="showStudentDetail('${s.id}')" title="Ver histórico">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="btn-icon" onclick="deleteStudent('${s.id}')" title="Excluir">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      </button>
+    </td>
+  </tr>`;
+}
+
+function searchStudents(q){
+  const tbody = document.querySelector('#students-table tbody'); if(!tbody) return;
+  const f = S.students.filter(s =>
+    s.name.toLowerCase().includes(q.toLowerCase()) ||
+    s.store.toLowerCase().includes(q.toLowerCase()) ||
+    s.login.includes(q)
+  );
+  tbody.innerHTML = f.length
+    ? f.map(stRow).join('')
+    : '<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:40px">Nenhum resultado.</td></tr>';
+}
+
+// ═══════════════════════════════════════════
+// PAGE — RELATÓRIOS
+// ═══════════════════════════════════════════
+function renderReports(){
+  // Montar lista flat de todos os eventos
+  const rows = [];
+  for(const stId in S.views){
+    const st = S.students.find(s=>s.id===stId);
+    const stName  = st ? st.name  : 'Colaborador removido';
+    const stStore = st ? st.store : '—';
+    for(const matId in S.views[stId]){
+      const v = S.views[stId][matId];
+      const mat = S.materials.find(m=>m.id===matId);
+      const matTitle = mat ? mat.title : 'Material removido';
+      const matType  = mat ? mat.type  : '?';
+      rows.push({ stId, stName, stStore, matId, matTitle, matType, ...v });
+    }
+  }
+  // Ordenar: mais recentes primeiro (markedAt ou viewedAt)
+  rows.sort((a,b)=>((b.markedAt||b.viewedAt||0)-(a.markedAt||a.viewedAt||0)));
+
+  const totalViews  = rows.length;
+  const totalMarked = rows.filter(r=>r.marked).length;
+  const pending     = totalViews - totalMarked;
+
+  return `
+  <div class="page-header"><h2>RELATÓRIOS</h2><p>Acompanhe quem acessou e confirmou cada material — tempo real</p></div>
+
+  <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
+    <div class="stat-card">
+      <div class="val">${totalViews}</div>
+      <div class="lbl">Total de Acessos</div>
+    </div>
+    <div class="stat-card green">
+      <div class="val">${totalMarked}</div>
+      <div class="lbl">Confirmados</div>
+      <div class="sub-val">Marcados como assistido/visto</div>
+    </div>
+    <div class="stat-card">
+      <div class="val" style="color:var(--txt2)">${pending}</div>
+      <div class="lbl">Abertos / Pendentes</div>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <div class="left">
+      <select class="filter-select" id="rep-filter-st" onchange="filterReports()">
+        <option value="all">Todos os colaboradores</option>
+        ${S.students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+      </select>
+      <select class="filter-select" id="rep-filter-type" onchange="filterReports()">
+        <option value="all">Todos os tipos</option>
+        <option value="video">Vídeo</option>
+        <option value="pdf">PDF</option>
+      </select>
+      <select class="filter-select" id="rep-filter-status" onchange="filterReports()">
+        <option value="all">Todos os status</option>
+        <option value="marked">Confirmados</option>
+        <option value="pending">Pendentes</option>
+      </select>
+    </div>
+    <button class="btn-export" onclick="exportCSV()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar CSV
+    </button>
+  </div>
+
+  ${rows.length ? `
+  <div class="table-wrap">
+    <table id="reports-table">
+      <thead><tr>
+        <th>Colaborador</th><th>Loja</th><th>Material</th><th>Tipo</th>
+        <th>Aberto em</th><th>Confirmado em</th><th>Status</th>
+      </tr></thead>
+      <tbody>${rows.map(reportRow).join('')}</tbody>
+    </table>
+  </div>` : `
+  <div class="empty-state">
+    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <p>Nenhuma visualização registrada ainda.</p>
+    <p style="font-size:12px;margin-top:8px">Quando um colaborador acessar um material, aparecerá aqui.</p>
+  </div>`}
+  `;
+}
+
+function reportRow(r){
+  const opened  = fmtDateTime(r.viewedAt);
+  const marked  = r.marked && r.markedAt ? fmtDateTime(r.markedAt) : null;
+  const label   = r.matType==='video' ? 'Assistido' : 'Visto';
+  return `<tr class="${r.marked?'view-row-watched':''}">
+    <td style="font-weight:500;color:var(--txt)">${r.stName}</td>
+    <td><span class="tag store">${r.stStore}</span></td>
+    <td style="color:var(--txt);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.matTitle}</td>
+    <td><span class="tag ${r.matType==='video'?'store':'partial'}">${r.matType==='video'?'VIDEO':'PDF'}</span></td>
+    <td>
+      <div class="timestamp-cell">
+        <span class="ts-date">${opened.date}</span>
+        <span class="ts-time">${opened.time}</span>
+      </div>
+    </td>
+    <td>
+      ${marked ? `<div class="timestamp-cell"><span class="ts-date">${marked.date}</span><span class="ts-time">${marked.time}</span></div>` : `<span style="color:var(--txt3);font-size:12px">—</span>`}
+    </td>
+    <td>
+      ${r.marked
+        ? `<span class="mark-pill done"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>${label}</span>`
+        : `<span class="mark-pill pending">Pendente</span>`}
+    </td>
+  </tr>`;
+}
+
+function filterReports(){
+  const stFilter     = $('rep-filter-st')?.value || 'all';
+  const typeFilter   = $('rep-filter-type')?.value || 'all';
+  const statusFilter = $('rep-filter-status')?.value || 'all';
+  const tbody = document.querySelector('#reports-table tbody'); if(!tbody) return;
+
+  const rows = [];
+  for(const stId in S.views){
+    if(stFilter!=='all' && stId!==stFilter) continue;
+    const st = S.students.find(s=>s.id===stId);
+    const stName=st?st.name:'Removido', stStore=st?st.store:'—';
+    for(const matId in S.views[stId]){
+      const v = S.views[stId][matId];
+      const mat = S.materials.find(m=>m.id===matId);
+      const matTitle=mat?mat.title:'Removido', matType=mat?mat.type:'?';
+      if(typeFilter!=='all' && matType!==typeFilter) continue;
+      if(statusFilter==='marked' && !v.marked) continue;
+      if(statusFilter==='pending' && v.marked) continue;
+      rows.push({stId,stName,stStore,matId,matTitle,matType,...v});
+    }
+  }
+  rows.sort((a,b)=>((b.markedAt||b.viewedAt||0)-(a.markedAt||a.viewedAt||0)));
+  tbody.innerHTML = rows.length ? rows.map(reportRow).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:40px">Nenhum resultado para os filtros selecionados.</td></tr>';
+}
+
+// ─── Exportar CSV ───
+function exportCSV(){
+  const rows=[['Colaborador','Login','Loja','Material','Tipo','Aberto em','Hora Abertura','Confirmado em','Hora Confirmação','Status']];
+  for(const stId in S.views){
+    const st=S.students.find(s=>s.id===stId);
+    for(const matId in S.views[stId]){
+      const v=S.views[stId][matId];
+      const mat=S.materials.find(m=>m.id===matId);
+      const op=fmtDateTime(v.viewedAt);
+      const mk=v.marked&&v.markedAt?fmtDateTime(v.markedAt):{date:'',time:''};
+      rows.push([
+        st?st.name:'Removido', st?st.login:'—', st?st.store:'—',
+        mat?mat.title:'Removido', mat?mat.type:'?',
+        op.date, op.time, mk.date, mk.time,
+        v.marked?(mat&&mat.type==='pdf'?'Visto':'Assistido'):'Pendente'
+      ]);
+    }
+  }
+  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=`facilitaclass_relatorio_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV exportado!','ok');
+}
+
+// ═══════════════════════════════════════════
+// MODAL — DETALHE DO COLABORADOR
+// ═══════════════════════════════════════════
+function showStudentDetail(stId){
+  const st = S.students.find(s=>s.id===stId); if(!st) return;
+  const stViews = S.views[stId] || {};
+  const {total, marked} = countViewsForStudent(stId);
+  const initials = st.name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+
+  const items = S.materials.map(m=>{
+    const v = stViews[m.id];
+    return {m, v};
+  });
+
+  const viewed  = items.filter(i=>i.v);
+  const pending = items.filter(i=>!i.v);
+
+  let html = `
+  <div class="st-detail-header">
+    <div class="st-detail-avatar">${initials}</div>
+    <div class="st-detail-info">
+      <h4>${st.name}</h4>
+      <p>${st.login} · ${st.store}</p>
+    </div>
+    <div class="st-detail-stats">
+      <div class="st-mini-stat"><div class="v">${total}</div><div class="l">Acessados</div></div>
+      <div class="st-mini-stat"><div class="v" style="color:var(--green)">${marked}</div><div class="l">Confirmados</div></div>
+      <div class="st-mini-stat"><div class="v" style="color:var(--txt2)">${pending.length}</div><div class="l">Pendentes</div></div>
+    </div>
+  </div>`;
+
+  if(viewed.length){
+    html += `<p style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Materiais acessados</p>`;
+    html += viewed.map(({m,v})=>{
+      const op=fmtDateTime(v.viewedAt);
+      const mk=v.marked&&v.markedAt?fmtDateTime(v.markedAt):null;
+      const label=m.type==='pdf'?'Visto':'Assistido';
+      return `<div class="mat-view-item">
+        <div class="mat-type-icon ${m.type==='video'?'vid':'pdf'}">
+          ${m.type==='video'
+            ?`<svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>`
+            :`<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`}
+        </div>
+        <div style="flex:1">
+          <div class="mat-view-name">${m.title}</div>
+          ${v.marked
+            ? `<span class="mark-pill done" style="margin-top:4px;display:inline-flex"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>${label}</span>`
+            : `<span class="mark-pill pending" style="margin-top:4px;display:inline-flex">Não confirmado</span>`}
+        </div>
+        <div class="mat-view-ts">
+          Aberto: ${op.date} às ${op.time}<br>
+          ${mk?`Confirmado: ${mk.date} às ${mk.time}`:'<span style="color:var(--txt3)">Aguardando confirmação</span>'}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  if(pending.length){
+    html += `<p style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin:16px 0 12px">Ainda não acessou</p>`;
+    html += pending.map(({m})=>`
+      <div class="mat-view-item" style="opacity:.5">
+        <div class="mat-type-icon ${m.type==='video'?'vid':'pdf'}">
+          ${m.type==='video'
+            ?`<svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>`
+            :`<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`}
+        </div>
+        <div class="mat-view-name">${m.title}</div>
+        <span class="tag not-viewed">Não visto</span>
+      </div>`).join('');
+  }
+
+  if(!viewed.length && !pending.length)
+    html += `<div class="empty-state" style="padding:40px"><p>Nenhum material disponível.</p></div>`;
+
+  $('student-detail-body').innerHTML = html;
+  openModal('modal-student-detail');
+}
+
+// ═══════════════════════════════════════════
+// MODAL — DETALHE DO MATERIAL (quem viu)
+// ═══════════════════════════════════════════
+function showMatDetail(matId){
+  const mat = S.materials.find(m=>m.id===matId); if(!mat) return;
+  $('mat-detail-title').textContent = mat.title.toUpperCase().slice(0,30)+(mat.title.length>30?'…':'');
+
+  const viewers = S.students.map(st=>{
+    const v = S.views[st.id]?.[matId];
+    return {st, v};
+  }).filter(x=>x.v);
+
+  const notViewed = S.students.filter(st=>!S.views[st.id]?.[matId]);
+
+  let html = '';
+  if(viewers.length){
+    html += `<p style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Colaboradores que acessaram (${viewers.length})</p>`;
+    html += viewers.map(({st,v})=>{
+      const op=fmtDateTime(v.viewedAt);
+      const mk=v.marked&&v.markedAt?fmtDateTime(v.markedAt):null;
+      const label=mat.type==='pdf'?'Visto':'Assistido';
+      return `<div class="mat-view-item">
+        <div style="flex:1">
+          <div class="mat-view-name">${st.name}</div>
+          <span style="font-size:11px;color:var(--txt3)">${st.store}</span>
+        </div>
+        ${v.marked
+          ?`<span class="mark-pill done"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>${label}</span>`
+          :`<span class="mark-pill pending">Pendente</span>`}
+        <div class="mat-view-ts">
+          ${op.date}<br>${op.time}
+          ${mk?`<br><span style="color:var(--green)">✓ ${mk.date}</span>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  if(notViewed.length){
+    html += `<p style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin:16px 0 12px">Ainda não acessaram (${notViewed.length})</p>`;
+    html += notViewed.map(st=>`<div class="mat-view-item" style="opacity:.45">
+      <div style="flex:1"><div class="mat-view-name">${st.name}</div><span style="font-size:11px;color:var(--txt3)">${st.store}</span></div>
+      <span class="tag not-viewed">Não visto</span>
+    </div>`).join('');
+  }
+
+  if(!viewers.length && !notViewed.length)
+    html = `<div class="empty-state" style="padding:40px"><p>Nenhum colaborador cadastrado.</p></div>`;
+
+  $('mat-detail-body').innerHTML = html;
+  openModal('modal-mat-detail');
+}
+
+
+// ═══════════════════════════════════════════
+// CATEGORIAS
+// ═══════════════════════════════════════════
+const CAT_LABELS = { atendimento:'📞 Atendimento', produto:'📦 Produto', seguranca:'🔒 Segurança', operacional:'⚙️ Operacional', rh:'👥 RH', outro:'📌 Outro' };
+
+function catChip(cat){
+  const label = CAT_LABELS[cat] || cat;
+  return `<span class="cat-chip ${cat||'outro'}">${label}</span>`;
+}
+
+function selectCat(el){
+  S.selectedCategory = el.dataset.cat;
+  document.querySelectorAll('.cat-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ═══════════════════════════════════════════
+// PAGE — DÚVIDAS
+// ═══════════════════════════════════════════
+function renderQuestionsPage(){
+  const el = $('page-content'); if(!el) return;
+  const unanswered = S.questions.filter(q=>!q.answer);
+  const answered   = S.questions.filter(q=>q.answer);
+
+  el.innerHTML = `
+  <div class="page-header">
+    <h2>CANAL DE DÚVIDAS</h2>
+    <p>Perguntas dos colaboradores sobre os materiais — responda para que vejam no portal deles</p>
+  </div>
+  <div class="action-bar" style="margin-bottom:20px">
+    <div class="left"></div>
+    <button class="btn-export" onclick="exportQuestionsCSV()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar Dúvidas CSV
+    </button>
+  </div>
+  ${unanswered.length ? `
+  <p style="font-size:11px;color:var(--or);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;font-weight:600">${unanswered.length} pergunta(s) aguardando resposta</p>
+  <div class="questions-list" id="q-list-open">
+    ${unanswered.map(q=>qCard(q)).join('')}
+  </div>
+  ` : `<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:28px;text-align:center;color:var(--green);font-size:13px;margin-bottom:24px">✓ Nenhuma dúvida pendente</div>`}
+  ${answered.length ? `
+  <p style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin:24px 0 12px">${answered.length} respondida(s)</p>
+  <div class="questions-list">
+    ${answered.map(q=>qCard(q)).join('')}
+  </div>` : ''}
+  `;
+}
+
+function qCard(q){
+  const st = S.students.find(s=>s.id===q.studentId);
+  const mat = S.materials.find(m=>m.id===q.materialId);
+  const initials = st ? st.name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase() : '?';
+  const ts = fmtDateTime(q.createdAt);
+  const answered = !!q.answer;
+  return `<div class="q-card ${answered?'':'unanswered'}" id="qcard-${q.id}">
+    <div class="q-card-head" onclick="toggleQAnswer('${q.id}')">
+      <div class="q-avatar">${initials}</div>
+      <div class="q-meta">
+        <div class="q-name">${st?st.name:'Colaborador'} <span style="font-size:11px;color:var(--txt3);font-weight:400">· ${st?st.store:''}</span></div>
+        <div class="q-sub">${mat?`Material: ${mat.title.slice(0,40)}${mat.title.length>40?'…':''}`:'Material removido'} · ${ts.date} às ${ts.time}</div>
+        <div class="q-text">${q.text}</div>
+      </div>
+      <span class="q-status-pill ${answered?'answered':'pending'}">${answered?'✓ Respondido':'Pendente'}</span>
+    </div>
+    <div class="q-answer-area" id="qans-${q.id}">
+      ${answered ? `<div class="q-existing-answer"><div class="ans-label">Resposta do administrador</div><div class="ans-txt">${q.answer}</div><div class="ans-ts">Respondido em ${fmtDateTime(q.answeredAt).date} às ${fmtDateTime(q.answeredAt).time}</div></div>` : ''}
+      <textarea class="q-reply-input" id="qinput-${q.id}" placeholder="Digite sua resposta..." rows="3">${answered?q.answer:''}</textarea>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="q-reply-btn" onclick="sendAnswer('${q.id}')" id="qbtn-${q.id}">${answered?'Atualizar resposta':'Responder'}</button>
+        ${answered?`<button onclick="deleteQuestion('${q.id}')" style="background:none;border:1px solid var(--border);color:var(--txt3);border-radius:var(--rs);padding:7px 12px;font-size:12px;cursor:pointer;font-family:var(--fb);transition:.2s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--txt3)'">Excluir</button>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleQAnswer(id){
+  const area = $('qans-'+id);
+  if(area) area.classList.toggle('open');
+}
+
+async function sendAnswer(qId){
+  const input = $('qinput-'+qId);
+  const btn   = $('qbtn-'+qId);
+  const ans = input?.value.trim();
+  if(!ans){ toast('Digite uma resposta','err'); return; }
+  if(!S.firebaseOk){ toast('Sem conexão','err'); return; }
+  btn.disabled=true; btn.textContent='Salvando...';
+  try {
+    await S.db.ref('questions/'+qId).update({ answer:ans, answeredAt:Date.now() });
+    toast('Resposta enviada! O colaborador poderá ver no portal.','ok');
+  } catch(e){ toast('Erro ao salvar: '+e.message,'err'); }
+  btn.disabled=false;
+}
+
+async function deleteQuestion(qId){
+  if(!confirm('Excluir esta dúvida?')) return;
+  try { await S.db.ref('questions/'+qId).remove(); toast('Dúvida removida','ok'); }
+  catch(e){ toast('Erro ao excluir','err'); }
+}
+
+// ═══════════════════════════════════════════
+// CRUD — MATERIAIS
+// ═══════════════════════════════════════════
+function selectMaterialType(t){
+  S.selectedType = t;
+  ['video','pdf'].forEach(x => $('type-'+x).classList.toggle('sel', x===t));
+  const fi = $('mat-file');
+  fi.accept = t==='video' ? 'video/*,video/mp4,video/webm' : '.pdf,application/pdf';
+  $('upload-txt').innerHTML = `<strong>Clique ou arraste</strong> ${t==='video'?'o vídeo':'o PDF'} aqui`;
+}
+
+function handleFileSelect(input){
+  const f = input.files[0]; if(!f) return;
+  S.selectedFile = f;
+  $('upload-txt').innerHTML = `<strong>${f.name}</strong> (${(f.size/1048576).toFixed(1)} MB)`;
+  $('mat-url').value = '';
+}
+
+async function saveMaterial(){
+  const title = $('mat-title').value.trim();
+  const desc  = $('mat-desc').value.trim();
+  if(!title){ toast('Informe o título','err'); return; }
+  const url = $('mat-url').value.trim();
+  if(!S.selectedFile && !url){ toast('Envie um arquivo ou cole uma URL','err'); return; }
+
+  const btn = $('btn-save-mat');
+  btn.disabled=true; btn.textContent='Publicando...';
+
+  let fileUrl = url;
+
+  if(S.selectedFile && !url){
+    if(S.firebaseOk){
+      try {
+        const prog=$('upload-progress'), fill=$('progress-fill');
+        prog.style.display='block';
+        const ref  = S.storage.ref(`materials/${Date.now()}_${S.selectedFile.name}`);
+        const task = ref.put(S.selectedFile);
+        await new Promise((res,rej) => {
+          task.on('state_changed',
+            snap => { fill.style.width=(snap.bytesTransferred/snap.totalBytes*100)+'%'; },
+            rej,
+            async () => { fileUrl = await ref.getDownloadURL(); res(); }
+          );
+        });
+        prog.style.display='none';
+      } catch(e){ toast('Erro no upload: '+e.message,'err'); btn.disabled=false; btn.textContent='Publicar Material'; return; }
+    } else {
+      fileUrl = await new Promise(res=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsDataURL(S.selectedFile); });
+    }
+  }
+
+  const tags = $('mat-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const mat = { title, description:desc, type:S.selectedType, url:fileUrl, category:S.selectedCategory||'outro', tags, createdAt:Date.now() };
+  try {
+    await S.db.ref('materials').push(mat);
+  } catch(e){ toast('Erro ao salvar: '+e.message,'err'); btn.disabled=false; btn.textContent='Publicar Material'; return; }
+
+  closeModal('modal-material');
+  btn.disabled=false; btn.textContent='Publicar Material';
+  ['mat-title','mat-desc','mat-url','mat-tags'].forEach(id=>$(id).value='');
+  S.selectedCategory='atendimento';
+  document.querySelectorAll('.cat-opt').forEach(el=>el.classList.toggle('sel',el.dataset.cat==='atendimento'));
+  S.selectedFile=null; $('mat-file').value='';
+  $('upload-txt').innerHTML='<strong>Clique ou arraste</strong> o arquivo aqui';
+  toast('Material publicado com sucesso!','ok');
+}
+
+async function deleteMaterial(id){
+  if(!confirm('Excluir este material permanentemente?')) return;
+  try { await S.db.ref('materials/'+id).remove(); toast('Material removido','ok'); }
+  catch(e){ toast('Erro ao excluir','err'); }
+}
+
+// ═══════════════════════════════════════════
+// CRUD — COLABORADORES
+// ═══════════════════════════════════════════
+async function saveStudent(){
+  const name  = $('st-name').value.trim();
+  const login = $('st-login').value.trim();
+  const pass  = $('st-pass').value.trim();
+  const store = $('st-store').value.trim();
+  if(!name||!login||!pass||!store){ toast('Preencha todos os campos','err'); return; }
+  const st = { name, login, password:pass, store, createdAt:Date.now(), active:true };
+  try {
+    await S.db.ref('students').push(st);
+    closeModal('modal-student');
+    ['st-name','st-login','st-pass','st-store'].forEach(id=>$(id).value='');
+    toast('Colaborador cadastrado!','ok');
+  } catch(e){ toast('Erro ao cadastrar: '+e.message,'err'); }
+}
+
+async function deleteStudent(id){
+  if(!confirm('Excluir este colaborador?')) return;
+  try { await S.db.ref('students/'+id).remove(); toast('Colaborador removido','ok'); }
+  catch(e){ toast('Erro ao excluir','err'); }
+}
+
+// ═══════════════════════════════════════════
+// VIEWER (PREVIEW ADMIN)
+// ─── Normaliza URLs de vídeo (YouTube + Google Drive) ───
+function normalizeVideoUrl(url){
+  if(!url) return { type:'raw', url };
+  // YouTube
+  if(url.includes('youtube.com/watch') || url.includes('youtu.be/')){
+    const embed = url.replace('watch?v=','embed/').replace('youtu.be/','www.youtube.com/embed/').split('&')[0];
+    return { type:'iframe', url: embed };
+  }
+  if(url.includes('youtube.com/embed')){
+    return { type:'iframe', url };
+  }
+  // Google Drive — /file/d/ID/view → /file/d/ID/preview
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if(driveMatch){
+    return { type:'iframe', url:`https://drive.google.com/file/d/${driveMatch[1]}/preview` };
+  }
+  // Drive open?id=ID
+  const driveOpen = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if(driveOpen){
+    return { type:'iframe', url:`https://drive.google.com/file/d/${driveOpen[1]}/preview` };
+  }
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if(vimeoMatch){
+    return { type:'iframe', url:`https://player.vimeo.com/video/${vimeoMatch[1]}` };
+  }
+  // Raw mp4 / direct URL
+  return { type:'raw', url };
+}
+
+// ═══════════════════════════════════════════
+function viewMaterial(id){
+  const m = S.materials.find(x=>x.id===id); if(!m) return;
+  $('view-title').textContent = m.title.toUpperCase();
+  let html = `<div class="viewer-player">`;
+  if(m.type==='video'){
+    const {type, url} = normalizeVideoUrl(m.url);
+    if(type==='iframe'){
+      html += `<iframe src="${url}" allowfullscreen></iframe>`;
+    } else {
+      html += `<video controls src="${url}"></video>`;
+    }
+  } else {
+    html += `<iframe class="pdf-embed" src="${m.url}#toolbar=1"></iframe>`;
+  }
+  html += `</div><div class="viewer-info"><h2>${m.title}</h2><p style="margin-top:10px">${m.description||'Sem descrição.'}</p>`;
+  const {total,marked} = countViewsForMaterial(id);
+  html += `<div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap">
+    <span style="font-size:13px;color:var(--txt2)">👁 ${total} colaborador(es) acessaram</span>
+    <span style="font-size:13px;color:var(--green)">✓ ${marked} confirmaram como ${m.type==='pdf'?'visto':'assistido'}</span>
+  </div>`;
+  if(m.createdAt) html+=`<p style="margin-top:12px;font-size:11px;color:var(--txt3)">Publicado em ${fmtDate(m.createdAt)}</p>`;
+  html+=`</div>`;
+  $('viewer-content').innerHTML=html;
+  openModal('modal-viewer');
+}
+
+function closeViewer(){
+  closeModal('modal-viewer');
+  $('viewer-content').innerHTML='';
+}
+
+// ═══════════════════════════════════════════
+// EDIÇÃO DE MATERIAL
+// ═══════════════════════════════════════════
+let S_editCat = 'atendimento';
+
+function openEditMaterial(id){
+  const m = S.materials.find(x=>x.id===id); if(!m) return;
+  $('edit-mat-id').value = id;
+  $('edit-title').value  = m.title || '';
+  $('edit-desc').value   = m.description || '';
+  $('edit-tags').value   = (m.tags||[]).join(', ');
+  S_editCat = m.category || 'outro';
+  document.querySelectorAll('#edit-cat-grid .cat-opt').forEach(el=>{
+    el.classList.toggle('sel', el.dataset.cat === S_editCat);
+  });
+  openModal('modal-edit-material');
+}
+
+function selectEditCat(el){
+  S_editCat = el.dataset.cat;
+  document.querySelectorAll('#edit-cat-grid .cat-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+async function saveEditMaterial(){
+  const id    = $('edit-mat-id').value;
+  const title = $('edit-title').value.trim();
+  const desc  = $('edit-desc').value.trim();
+  const tags  = $('edit-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  if(!title){ toast('Informe o título','err'); return; }
+  if(!S.firebaseOk){ toast('Sem conexão com Firebase','err'); return; }
+  const btn = $('btn-save-edit');
+  btn.disabled=true; btn.textContent='Salvando...';
+  try {
+    await S.db.ref('materials/'+id).update({ title, description:desc, category:S_editCat, tags });
+    closeModal('modal-edit-material');
+    toast('Material atualizado!','ok');
+  } catch(e){ toast('Erro ao salvar: '+e.message,'err'); }
+  btn.disabled=false; btn.textContent='Salvar Alterações';
+}
+
+// ═══════════════════════════════════════════
+// REORDENAÇÃO DE MATERIAIS (Drag & Drop)
+// ═══════════════════════════════════════════
+let dragSrcIndex = null;
+let reorderArr   = [];
+
+function openReorderModal(){
+  reorderArr = [...S.materials];
+  renderReorderList();
+  openModal('modal-reorder');
+}
+
+function renderReorderList(){
+  const list = $('reorder-list'); if(!list) return;
+  list.innerHTML = reorderArr.map((m,i)=>{
+    const isV = m.type==='video';
+    return `<div class="reorder-item" draggable="true" data-index="${i}"
+      ondragstart="onDragStart(event,${i})"
+      ondragover="onDragOver(event,${i})"
+      ondragleave="onDragLeave(event)"
+      ondrop="onDrop(event,${i})"
+      ondragend="onDragEnd()">
+      <div class="drag-handle"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></div>
+      <div class="reorder-num">${i+1}</div>
+      <div class="reorder-info">
+        <div class="rt">${m.title}</div>
+        <div class="rs">${isV?'🎬 Vídeo':'📄 PDF'} · ${CAT_LABELS[m.category]||m.category||'Outro'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function onDragStart(e, i){
+  dragSrcIndex = i;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function onDragOver(e, i){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.reorder-item').forEach((el,idx)=>{
+    el.classList.toggle('drag-over', idx===i && i!==dragSrcIndex);
+  });
+}
+
+function onDragLeave(e){ e.currentTarget.classList.remove('drag-over'); }
+
+function onDrop(e, i){
+  e.preventDefault();
+  if(dragSrcIndex===null || dragSrcIndex===i) return;
+  const moved = reorderArr.splice(dragSrcIndex, 1)[0];
+  reorderArr.splice(i, 0, moved);
+  dragSrcIndex = null;
+  renderReorderList();
+}
+
+function onDragEnd(){
+  dragSrcIndex = null;
+  document.querySelectorAll('.reorder-item').forEach(el=>{
+    el.classList.remove('dragging','drag-over');
+  });
+}
+
+async function saveOrder(){
+  if(!S.firebaseOk){ toast('Sem conexão com Firebase','err'); return; }
+  try {
+    const updates = {};
+    reorderArr.forEach((m,i)=>{ updates[`materials/${m.id}/order`] = i; });
+    await S.db.ref().update(updates);
+    closeModal('modal-reorder');
+    toast('Ordem salva! A trilha foi atualizada.','ok');
+  } catch(e){ toast('Erro ao salvar ordem: '+e.message,'err'); }
+}
+
+// ═══════════════════════════════════════════
+// EXPORTAR DÚVIDAS CSV
+// ═══════════════════════════════════════════
+function exportQuestionsCSV(){
+  const rows=[['Data','Colaborador','Login','Loja','Material','Pergunta','Status','Respondido em','Resposta']];
+  S.questions.forEach(q=>{
+    const st  = S.students.find(s=>s.id===q.studentId);
+    const mat = S.materials.find(m=>m.id===q.materialId);
+    const ts  = fmtDateTime(q.createdAt);
+    const ans = q.answer ? fmtDateTime(q.answeredAt) : {date:'',time:''};
+    rows.push([
+      `${ts.date} ${ts.time}`,
+      st?st.name:'Removido', st?st.login:'—', st?st.store:'—',
+      mat?mat.title:'Removido',
+      q.text||'',
+      q.answer?'Respondido':'Pendente',
+      q.answer?`${ans.date} ${ans.time}`:'',
+      q.answer||''
+    ]);
+  });
+  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=`facilitaclass_duvidas_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV de dúvidas exportado!','ok');
+}
+
+// ═══════════════════════════════════════════
+// PÁGINA — NOTIFICAÇÕES
+// ═══════════════════════════════════════════
+function renderNotifications(){
+  // Load saved settings from localStorage (client-side only, Firebase-free)
+  const saved = JSON.parse(localStorage.getItem('fc_notif_settings')||'{}');
+  const emailEnabled   = saved.emailEnabled   ?? false;
+  const emailAddr      = saved.emailAddr      || '';
+  const whatsEnabled   = saved.whatsEnabled   ?? false;
+  const whatsNumber    = saved.whatsNumber    || '';
+  const notifyNewQ     = saved.notifyNewQ     ?? true;
+  const notifyNightly  = saved.notifyNightly  ?? false;
+
+  return `
+  <div class="page-header">
+    <h2>NOTIFICAÇÕES</h2>
+    <p>Configure como receber alertas quando colaboradores enviarem dúvidas</p>
+  </div>
+
+  <div class="notif-section">
+    <h4>📧 E-mail</h4>
+    <p>Receba um e-mail quando uma nova dúvida for enviada. Requer Firebase Functions (Node.js) com Nodemailer ou SendGrid configurado no back-end.</p>
+    <div class="notif-row">
+      <label>Ativar notificação por e-mail</label>
+      <div class="toggle-wrap">
+        <label class="toggle"><input type="checkbox" id="notif-email-toggle" ${emailEnabled?'checked':''} onchange="saveNotifSettings()"><span class="toggle-slider"></span></label>
+        <span style="font-size:12px;color:var(--txt2)">${emailEnabled?'Ativo':'Inativo'}</span>
+      </div>
+    </div>
+    <div class="notif-row">
+      <label>Endereço de e-mail</label>
+      <input type="email" id="notif-email-addr" value="${emailAddr}" placeholder="admin@empresa.com" oninput="saveNotifSettings()">
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);padding:14px;font-size:12px;color:var(--txt3);line-height:1.6;margin-top:4px">
+      <strong style="color:var(--txt2)">Como implementar:</strong> no Firebase Functions, ouça <code style="background:var(--bg);padding:1px 6px;border-radius:4px">questions/{questionId}</code> com <code style="background:var(--bg);padding:1px 6px;border-radius:4px">onCreate</code> e envie o e-mail usando Nodemailer ou a API do SendGrid. O endereço acima deve ser salvo no Realtime Database em <code style="background:var(--bg);padding:1px 6px;border-radius:4px">config/notifEmail</code>.
+    </div>
+  </div>
+
+  <div class="notif-section">
+    <h4>💬 WhatsApp (Twilio)</h4>
+    <p>Receba uma mensagem WhatsApp quando uma nova dúvida for enviada. Requer conta Twilio com número WhatsApp Business aprovado.</p>
+    <div class="notif-row">
+      <label>Ativar notificação por WhatsApp</label>
+      <div class="toggle-wrap">
+        <label class="toggle"><input type="checkbox" id="notif-whats-toggle" ${whatsEnabled?'checked':''} onchange="saveNotifSettings()"><span class="toggle-slider"></span></label>
+        <span style="font-size:12px;color:var(--txt2)">${whatsEnabled?'Ativo':'Inativo'}</span>
+      </div>
+    </div>
+    <div class="notif-row">
+      <label>Número WhatsApp (com DDI)</label>
+      <input type="tel" id="notif-whats-number" value="${whatsNumber}" placeholder="+5511999999999" oninput="saveNotifSettings()">
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);padding:14px;font-size:12px;color:var(--txt3);line-height:1.6;margin-top:4px">
+      <strong style="color:var(--txt2)">Como implementar:</strong> no Firebase Functions, use o Twilio SDK com <code style="background:var(--bg);padding:1px 6px;border-radius:4px">client.messages.create({ from:'whatsapp:+14155238886', to:'whatsapp:NUMERO', body:'...' })</code>. Salve as credenciais Twilio no Firebase Secret Manager. O número acima deve ser salvo em <code style="background:var(--bg);padding:1px 6px;border-radius:4px">config/notifWhatsapp</code>.
+    </div>
+  </div>
+
+  <div class="notif-section">
+    <h4>⚙️ Preferências de alerta</h4>
+    <p>Escolha quando você quer ser notificado.</p>
+    <div class="notif-row">
+      <label>Alerta imediato a cada nova dúvida</label>
+      <div class="toggle-wrap">
+        <label class="toggle"><input type="checkbox" id="notif-newq" ${notifyNewQ?'checked':''} onchange="saveNotifSettings()"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="notif-row">
+      <label>Resumo diário de dúvidas pendentes (à meia-noite)</label>
+      <div class="toggle-wrap">
+        <label class="toggle"><input type="checkbox" id="notif-nightly" ${notifyNightly?'checked':''} onchange="saveNotifSettings()"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:12px;margin-top:4px">
+    <button class="btn-save" style="max-width:200px" onclick="pushNotifSettingsToFirebase()">
+      Salvar no Firebase
+    </button>
+    <span style="font-size:12px;color:var(--txt3);align-self:center">Salva as configurações em <code>config/notifications</code> no Realtime Database para uso pelo Firebase Functions.</span>
+  </div>
+  `;
+}
+
+function saveNotifSettings(){
+  const settings = {
+    emailEnabled:  !!$('notif-email-toggle')?.checked,
+    emailAddr:     $('notif-email-addr')?.value   || '',
+    whatsEnabled:  !!$('notif-whats-toggle')?.checked,
+    whatsNumber:   $('notif-whats-number')?.value || '',
+    notifyNewQ:    !!$('notif-newq')?.checked,
+    notifyNightly: !!$('notif-nightly')?.checked
+  };
+  localStorage.setItem('fc_notif_settings', JSON.stringify(settings));
+}
+
+async function pushNotifSettingsToFirebase(){
+  if(!S.firebaseOk){ toast('Sem conexão com Firebase','err'); return; }
+  saveNotifSettings();
+  const settings = JSON.parse(localStorage.getItem('fc_notif_settings')||'{}');
+  try {
+    await S.db.ref('config/notifications').set(settings);
+    toast('Configurações salvas no Firebase!','ok');
+  } catch(e){ toast('Erro: '+e.message,'err'); }
+}
+
+// ─── INIT ───
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    $('loading-screen').style.display='none';
+    $('login-screen').style.display='flex';
+  }, 1200);
+});
+</script>
+
+<!--
+╔══════════════════════════════════════════════════════════════╗
+║  CÓDIGO PARA A TELA DO COLABORADOR (facilitaclass-aluno.html) ║
+║  Adicione ao viewer do colaborador para registrar no Firebase: ║
+╚══════════════════════════════════════════════════════════════╝
+
+// Quando o colaborador abre o material:
+async function recordView(studentId, material) {
+  const ref = db.ref(`views/${studentId}/${material.id}`);
+  const snap = await ref.once('value');
+  if (!snap.exists()) {
+    await ref.set({
+      viewedAt: Date.now(),
+      marked: false,
+      markedAt: null,
+      type: material.type
+    });
+  }
+}
+
+// Botão "Marcar como assistido / visto" no viewer do colaborador:
+async function markAsWatched(studentId, materialId, type) {
+  const label = type === 'pdf' ? 'visto' : 'assistido';
+  await db.ref(`views/${studentId}/${materialId}`).update({
+    marked: true,
+    markedAt: Date.now()
+  });
+  toast(`Material marcado como ${label}!`, 'ok');
+  // Atualizar o botão na UI para desabilitado
+}
+
+// No HTML do viewer do colaborador, adicione:
+// <button onclick="markAsWatched(S.user.id, currentMaterialId, currentMaterialType)">
+//   ✓ Marcar como assistido / visto
+// </button>
+-->
+</body>
+</html>

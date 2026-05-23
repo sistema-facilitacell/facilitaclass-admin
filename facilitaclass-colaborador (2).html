@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FacilitaClass — Portal do Colaborador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#080808;--s1:#111;--s2:#191919;
+  --border:#2a2a2a;--border2:#3a3a3a;
+  --green:#22c55e;--green2:#16a34a;
+  --green-glow:rgba(34,197,94,.15);--green-faint:rgba(34,197,94,.06);
+  --txt:#f0f0f0;--txt2:#999;--txt3:#555;
+  --or:#FF6500;--red:#ef4444;--blue:#3b82f6;
+  --fd:'Bebas Neue',sans-serif;--fb:'Outfit',sans-serif;
+  --r:12px;--rs:8px;
+}
+body{background:var(--bg);color:var(--txt);font-family:var(--fb);min-height:100vh;overflow-x:hidden}
+input,select,textarea{font-family:var(--fb)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--green)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* LOADING */
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:9998}
+.loading-logo{font-family:var(--fd);font-size:48px;letter-spacing:4px;color:var(--green)}
+.loading-logo span{color:var(--txt)}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite}
+.loading-txt{font-size:12px;color:var(--txt3);letter-spacing:2px;text-transform:uppercase}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;display:none;align-items:stretch;overflow:hidden}
+.login-left{flex:1;background:var(--s1);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:60px;position:relative;overflow:hidden}
+.login-left::before{content:'';position:absolute;top:-60px;left:-60px;width:400px;height:400px;background:radial-gradient(circle,rgba(34,197,94,.12),transparent 70%);pointer-events:none}
+.login-left::after{content:'';position:absolute;bottom:-40px;right:-40px;width:300px;height:300px;background:radial-gradient(circle,rgba(34,197,94,.07),transparent 70%);pointer-events:none}
+.login-logo{font-family:var(--fd);font-size:52px;letter-spacing:4px;color:var(--green);line-height:1;margin-bottom:8px;position:relative;z-index:1}
+.login-logo span{color:var(--txt)}
+.login-tagline{font-size:13px;color:var(--txt2);letter-spacing:3px;text-transform:uppercase;position:relative;z-index:1;margin-bottom:48px}
+.login-portal-label{display:inline-flex;align-items:center;gap:8px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:var(--green);border-radius:50px;padding:6px 16px;font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;position:relative;z-index:1;margin-bottom:32px}
+.login-portal-label .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+.login-illustration{position:relative;z-index:1;display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px}
+.feat-pill{display:flex;align-items:center;gap:12px;background:var(--s2);border:1px solid var(--border);border-radius:50px;padding:12px 18px;font-size:13px;color:var(--txt2)}
+.feat-pill .icon{width:32px;height:32px;background:var(--green-glow);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.feat-pill .icon svg{width:16px;height:16px;stroke:var(--green);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.login-right{width:440px;background:var(--bg);display:flex;flex-direction:column;justify-content:center;padding:60px 48px}
+.login-right h2{font-family:var(--fd);font-size:36px;letter-spacing:2px;margin-bottom:6px}
+.login-right .sub{font-size:13px;color:var(--txt2);margin-bottom:36px}
+.badge-col{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:50px;font-size:12px;font-weight:600;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.25);margin-bottom:28px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;color:var(--txt2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-group input{width:100%;background:var(--s1);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:12px 14px;font-size:14px;transition:.2s}
+.form-group input:focus{outline:none;border-color:var(--green);background:var(--green-faint)}
+.form-group input::placeholder{color:var(--txt3)}
+.btn-primary{width:100%;background:var(--green);color:#fff;border:none;border-radius:var(--rs);padding:13px;font-size:15px;font-weight:600;cursor:pointer;transition:.2s;margin-top:4px;font-family:var(--fb)}
+.btn-primary:hover{background:var(--green2)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.login-err{color:var(--red);font-size:13px;margin-top:10px;display:none;padding:10px 14px;background:rgba(239,68,68,.08);border-radius:var(--rs);border:1px solid rgba(239,68,68,.2)}
+
+/* APP */
+#app-screen{display:none;height:100vh;flex-direction:column}
+.topbar{height:60px;background:var(--s1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:100}
+.topbar-logo{font-family:var(--fd);font-size:26px;letter-spacing:2px;color:var(--green)}
+.topbar-logo span{color:var(--txt)}
+.topbar-portal{font-size:11px;color:var(--txt3);letter-spacing:1.5px;text-transform:uppercase;border-left:1px solid var(--border);padding-left:16px}
+.topbar-user{margin-left:auto;display:flex;align-items:center;gap:12px}
+.user-badge{background:var(--s2);border:1px solid var(--border);border-radius:50px;padding:6px 14px;font-size:13px;display:flex;align-items:center;gap:8px}
+.user-dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.rt-live{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--green);background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:50px;padding:4px 12px}
+.rt-live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+.btn-logout{background:none;border:1px solid var(--border);color:var(--txt2);border-radius:var(--rs);padding:7px 14px;font-size:12px;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.btn-logout:hover{border-color:var(--green);color:var(--green)}
+.main-body{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 12px;gap:4px;overflow-y:auto;flex-shrink:0}
+.sidebar-section{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1.5px;padding:16px 10px 8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rs);cursor:pointer;transition:.2s;font-size:14px;color:var(--txt2);border:1px solid transparent}
+.nav-item svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.nav-item:hover{background:var(--s2);color:var(--txt)}
+.nav-item.active{background:var(--green-glow);color:var(--green);border-color:rgba(34,197,94,.2)}
+.nav-progress{margin-top:auto;padding:16px 10px}
+.progress-label{font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.progress-bar-wrap{background:var(--s2);border-radius:4px;height:6px;overflow:hidden}
+.progress-bar-fill{height:100%;background:var(--green);border-radius:4px;transition:.5s}
+.progress-pct{font-size:12px;color:var(--green);font-weight:600;margin-top:6px}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:28px}
+
+/* HERO */
+.student-hero{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:28px 32px;margin-bottom:28px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.student-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:220px;height:220px;background:radial-gradient(circle,rgba(34,197,94,.1),transparent 70%)}
+.hero-left{position:relative;z-index:1}
+.hero-label{font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}
+.student-hero h2{font-family:var(--fd);font-size:32px;letter-spacing:2px;color:var(--txt);margin-bottom:4px}
+.store-tag{display:inline-flex;align-items:center;gap:6px;background:var(--green-faint);border:1px solid rgba(34,197,94,.25);color:var(--green);border-radius:50px;padding:5px 14px;font-size:12px;font-weight:600;margin-top:8px}
+.hero-stats{display:flex;gap:16px;position:relative;z-index:1}
+.hero-stat{background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);padding:14px 20px;text-align:center;min-width:90px}
+.hero-stat .hval{font-family:var(--fd);font-size:32px;color:var(--green);line-height:1}
+.hero-stat .hlbl{font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+
+/* PAGE HEADER */
+.page-header{margin-bottom:20px}
+.page-header h2{font-family:var(--fd);font-size:28px;letter-spacing:2px;margin-bottom:4px}
+.page-header p{font-size:13px;color:var(--txt2)}
+
+/* ACTION BAR */
+.action-bar{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.search-input{background:var(--s2);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:9px 12px;font-size:13px;width:260px;font-family:var(--fb)}
+.search-input:focus{outline:none;border-color:var(--green)}
+.filter-select{background:var(--s1);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:9px 12px;font-size:13px;cursor:pointer;font-family:var(--fb)}
+.filter-select:focus{outline:none;border-color:var(--green)}
+.filter-btn{background:var(--s2);border:1px solid var(--border);color:var(--txt2);border-radius:var(--rs);padding:8px 14px;font-size:12px;cursor:pointer;font-family:var(--fb);transition:.2s}
+.filter-btn.active{background:var(--green-faint);border-color:rgba(34,197,94,.3);color:var(--green)}
+
+/* CARDS */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.material-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:.25s;animation:fadeIn .3s ease}
+.material-card:hover{border-color:var(--green);transform:translateY(-3px);box-shadow:0 8px 32px rgba(34,197,94,.08)}
+.material-card.watched{border-color:rgba(34,197,94,.35)}
+.card-thumb{height:160px;background:var(--s2);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.card-thumb.vid{background:linear-gradient(135deg,#001a0a,#002810)}
+.card-thumb.pdf{background:linear-gradient(135deg,#0a0a1a,#0a102a)}
+.card-thumb svg.main-icon{width:48px;height:48px;stroke:var(--green);fill:none;stroke-width:1.5;opacity:.7}
+.type-badge{position:absolute;top:12px;left:12px;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.type-badge.v{background:rgba(34,197,94,.2);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.type-badge.p{background:rgba(59,130,246,.2);color:#60a5fa;border:1px solid rgba(59,130,246,.3)}
+.new-badge{position:absolute;top:12px;right:12px;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(255,101,0,.2);color:#ff6500;border:1px solid rgba(255,101,0,.3)}
+.watched-overlay{position:absolute;inset:0;background:rgba(34,197,94,.08);display:flex;align-items:center;justify-content:center}
+.watched-check{width:44px;height:44px;background:rgba(34,197,94,.9);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.watched-check svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.card-body{padding:16px}
+.card-body h3{font-size:15px;font-weight:600;color:var(--txt);margin-bottom:6px;line-height:1.3}
+.card-body p{font-size:12px;color:var(--txt2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.watched-info{font-size:11px;color:var(--green);margin-top:8px;display:flex;align-items:center;gap:5px}
+.watched-info svg{width:12px;height:12px;stroke:var(--green);fill:none;stroke-width:2}
+.card-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-footer .date{font-size:11px;color:var(--txt3)}
+.btn-sm{background:var(--green);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.btn-sm:hover{background:var(--green2)}
+.btn-sm.watched-btn{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.btn-sm.watched-btn:hover{background:rgba(34,197,94,.25)}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:80px 20px;color:var(--txt3)}
+.empty-state svg{width:64px;height:64px;stroke:var(--border2);fill:none;stroke-width:1.2;margin:0 auto 16px;display:block}
+.empty-state p{font-size:14px}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:.25s}
+.modal-overlay.show{opacity:1;pointer-events:all}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:16px;width:100%;max-width:720px;max-height:92vh;overflow-y:auto;transform:scale(.96);transition:.25s}
+.modal-overlay.show .modal{transform:scale(1)}
+.modal-head{padding:24px 24px 0;display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-family:var(--fd);font-size:26px;letter-spacing:1px}
+.modal-close{background:var(--s2);border:1px solid var(--border);color:var(--txt2);border-radius:6px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0}
+.modal-close:hover{border-color:var(--red);color:var(--red)}
+.modal-close svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5}
+.viewer-body{padding:0}
+.viewer-info{padding:20px 24px}
+.viewer-info h2{font-family:var(--fd);font-size:26px;letter-spacing:1px;margin-bottom:6px}
+.viewer-info p{font-size:13px;color:var(--txt2);line-height:1.6}
+.viewer-player{background:#000}
+.viewer-player video{width:100%;display:block;max-height:420px}
+.viewer-player iframe{width:100%;height:420px;display:block;border:none}
+.pdf-embed{width:100%;height:500px;border:none;display:block}
+
+/* MARK WATCHED BAR */
+.mark-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-top:1px solid var(--border);background:var(--s2);gap:12px;flex-wrap:wrap}
+.mark-bar .info{font-size:13px;color:var(--txt2)}
+.mark-bar .info strong{color:var(--green)}
+.btn-mark{display:flex;align-items:center;gap:8px;background:var(--green);color:#fff;border:none;border-radius:var(--rs);padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.btn-mark svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.btn-mark:hover{background:var(--green2)}
+.btn-mark.done{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3);cursor:default}
+
+
+
+/* NOTIFICAÇÃO DE RESPOSTA */
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.notif-banner{display:none;align-items:flex-start;gap:12px;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;animation:slideDown .3s ease;cursor:pointer;transition:.2s}
+.notif-banner:hover{background:rgba(34,197,94,.12)}
+.notif-banner.show{display:flex}
+.notif-icon{width:36px;height:36px;border-radius:50%;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.notif-icon svg{width:18px;height:18px;stroke:var(--green);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.notif-body{flex:1}
+.notif-title{font-size:13px;font-weight:600;color:var(--green);margin-bottom:2px}
+.notif-sub{font-size:12px;color:var(--txt2)}
+.notif-close{background:none;border:none;color:var(--txt3);cursor:pointer;padding:2px;font-size:16px;line-height:1;margin-left:auto;align-self:flex-start}
+.notif-close:hover{color:var(--txt)}
+.sidebar-notif-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;margin-left:auto;display:none}
+
+/* PROGRESSO POR CATEGORIA */
+.cat-progress-section{margin-bottom:28px}
+.cat-progress-section-title{font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;font-weight:600}
+.cat-progress-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.cat-prog-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;position:relative;overflow:hidden}
+.cat-prog-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.cat-prog-card.atendimento::before{background:#60a5fa}
+.cat-prog-card.produto::before{background:#c084fc}
+.cat-prog-card.seguranca::before{background:#f87171}
+.cat-prog-card.operacional::before{background:#fbbf24}
+.cat-prog-card.rh::before{background:#2dd4bf}
+.cat-prog-card.outro::before{background:var(--border2)}
+.cat-prog-label{font-size:12px;color:var(--txt2);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.cat-prog-label span{font-size:11px;color:var(--txt3)}
+.cat-prog-bar{height:4px;background:var(--s2);border-radius:2px;overflow:hidden}
+.cat-prog-fill{height:100%;border-radius:2px;transition:.5s}
+.cat-prog-card.atendimento .cat-prog-fill{background:#60a5fa}
+.cat-prog-card.produto .cat-prog-fill{background:#c084fc}
+.cat-prog-card.seguranca .cat-prog-fill{background:#f87171}
+.cat-prog-card.operacional .cat-prog-fill{background:#fbbf24}
+.cat-prog-card.rh .cat-prog-fill{background:#2dd4bf}
+.cat-prog-card.outro .cat-prog-fill{background:var(--border2)}
+.cat-prog-nums{font-family:var(--fd);font-size:22px;color:var(--txt);line-height:1;margin-top:6px}
+.cat-prog-nums span{font-size:13px;font-family:var(--fb);color:var(--txt3);font-weight:400}
+
+/* VIDEO RESUME TOAST */
+.resume-bar{display:none;align-items:center;gap:12px;padding:10px 16px;background:rgba(34,197,94,.07);border-top:1px solid rgba(34,197,94,.2)}
+.resume-bar.show{display:flex}
+.resume-bar-txt{font-size:12px;color:var(--txt2);flex:1}
+.resume-bar-txt strong{color:var(--green)}
+.resume-btn{background:var(--green);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--fb);transition:.2s}
+.resume-btn:hover{background:var(--green2)}
+.resume-skip{background:none;border:none;color:var(--txt3);font-size:12px;cursor:pointer;font-family:var(--fb);transition:.2s}
+.resume-skip:hover{color:var(--txt)}
+
+/* CATEGORIAS */
+.cat-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:10px;font-weight:600;letter-spacing:.3px;border:1px solid}
+.cat-chip.atendimento{background:rgba(59,130,246,.12);color:#60a5fa;border-color:rgba(59,130,246,.3)}
+.cat-chip.produto{background:rgba(168,85,247,.12);color:#c084fc;border-color:rgba(168,85,247,.3)}
+.cat-chip.seguranca{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.3)}
+.cat-chip.operacional{background:rgba(251,191,36,.12);color:#fbbf24;border-color:rgba(251,191,36,.3)}
+.cat-chip.rh{background:rgba(20,184,166,.12);color:#2dd4bf;border-color:rgba(20,184,166,.3)}
+.cat-chip.outro{background:var(--s2);color:var(--txt2);border-color:var(--border)}
+.filter-chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.filter-chip{padding:5px 12px;border-radius:50px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--s2);color:var(--txt2);cursor:pointer;transition:.2s;white-space:nowrap}
+.filter-chip:hover{border-color:var(--border2);color:var(--txt)}
+.filter-chip.active{background:var(--green-faint);border-color:rgba(34,197,94,.4);color:var(--green)}
+
+/* CANAL DE DÚVIDAS — COLABORADOR */
+.doubt-btn{display:flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--border);color:var(--txt2);border-radius:var(--rs);padding:8px 14px;font-size:12px;font-weight:500;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.doubt-btn:hover{border-color:var(--green);color:var(--green)}
+.doubt-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.doubt-panel{padding:16px 24px;border-top:1px solid var(--border);background:var(--s2)}
+.doubt-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.doubt-panel-head label{font-size:12px;color:var(--txt2);text-transform:uppercase;letter-spacing:.8px;font-weight:600;display:flex;align-items:center;gap:8px}
+.doubt-panel-head label svg{width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.doubt-history{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;max-height:220px;overflow-y:auto}
+.doubt-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px}
+.doubt-item .dq{font-size:13px;color:var(--txt);line-height:1.5}
+.doubt-item .dq-meta{font-size:11px;color:var(--txt3);margin-top:4px}
+.doubt-answer{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:var(--rs);padding:10px 12px;margin-top:8px}
+.doubt-answer .da-label{font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:4px}
+.doubt-answer .da-txt{font-size:13px;color:var(--txt2);line-height:1.5}
+.doubt-answer .da-ts{font-size:10px;color:var(--txt3);margin-top:4px}
+.doubt-pending{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--txt3);background:var(--s1);padding:4px 10px;border-radius:50px;border:1px solid var(--border)}
+.doubt-textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:10px 12px;font-size:13px;font-family:var(--fb);resize:vertical;min-height:72px;transition:.2s;margin-bottom:10px}
+.doubt-textarea:focus{outline:none;border-color:var(--green);background:var(--green-faint)}
+.doubt-send-btn{display:flex;align-items:center;gap:7px;background:var(--green);color:#fff;border:none;border-radius:var(--rs);padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--fb);transition:.2s}
+.doubt-send-btn:hover{background:var(--green2)}
+.doubt-send-btn:disabled{opacity:.6;cursor:not-allowed}
+.doubt-send-btn svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* NOTES PANEL */
+.notes-panel{padding:16px 24px;border-top:1px solid var(--border);background:var(--bg)}
+.notes-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:12px}
+.notes-panel-head label{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt2);text-transform:uppercase;letter-spacing:.8px;font-weight:600;cursor:pointer;user-select:none}
+.notes-panel-head label svg{width:15px;height:15px;stroke:var(--green);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.notes-toggle-btn{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:11px;font-family:var(--fb);display:flex;align-items:center;gap:5px;padding:0;transition:.2s}
+.notes-toggle-btn:hover{color:var(--txt2)}
+.notes-toggle-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:.2s}
+.notes-body{display:flex;flex-direction:column;gap:10px;animation:fadeIn .2s ease}
+.notes-textarea{width:100%;background:var(--s1);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:12px 14px;font-size:13px;font-family:var(--fb);line-height:1.6;resize:vertical;min-height:100px;transition:.2s}
+.notes-textarea:focus{outline:none;border-color:var(--green);background:var(--green-faint)}
+.notes-textarea::placeholder{color:var(--txt3)}
+.notes-footer{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.notes-save-btn{display:flex;align-items:center;gap:7px;background:var(--green);color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.notes-save-btn:hover{background:var(--green2)}
+.notes-save-btn:disabled{opacity:.6;cursor:not-allowed}
+.notes-save-btn svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.notes-status{font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:5px}
+.notes-status.saved{color:var(--green)}
+.notes-status svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.notes-char{font-size:11px;color:var(--txt3);margin-left:auto}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);padding:12px 18px;font-size:13px;color:var(--txt);display:flex;align-items:center;gap:10px;z-index:9999;transform:translateY(80px);opacity:0;transition:.3s;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.toast.show{transform:translateY(0);opacity:1}
+.t-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.t-dot.ok{background:var(--green)}.t-dot.err{background:var(--red)}
+
+/* CERTIFICADO MODAL */
+.cert-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(8px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:.35s}
+.cert-overlay.show{opacity:1;pointer-events:all}
+.cert-modal{background:var(--s1);border:1px solid var(--border);border-radius:20px;width:100%;max-width:560px;overflow:hidden;transform:scale(.94) translateY(16px);transition:.35s}
+.cert-overlay.show .cert-modal{transform:scale(1) translateY(0)}
+.cert-confetti{height:6px;background:linear-gradient(90deg,var(--green),#22d3ee,#a855f7,var(--green))}
+.cert-top{padding:32px 36px 24px;text-align:center}
+.cert-trophy{width:72px;height:72px;border-radius:50%;background:rgba(34,197,94,.12);border:2px solid rgba(34,197,94,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.cert-trophy svg{width:36px;height:36px;stroke:var(--green);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.cert-top h2{font-family:var(--fd);font-size:32px;letter-spacing:2px;color:var(--green);margin-bottom:6px}
+.cert-top p{font-size:14px;color:var(--txt2);line-height:1.6}
+.cert-stats-row{display:flex;justify-content:center;gap:12px;margin:20px 0}
+.cert-stat{background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);padding:12px 20px;text-align:center}
+.cert-stat .cv{font-family:var(--fd);font-size:28px;color:var(--green);line-height:1}
+.cert-stat .cl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.cert-actions{padding:0 36px 32px;display:flex;flex-direction:column;gap:10px}
+.btn-cert{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:600;cursor:pointer;transition:.2s;font-family:var(--fb);border:none}
+.btn-cert.primary{background:var(--green);color:#fff}
+.btn-cert.primary:hover{background:var(--green2)}
+.btn-cert.primary svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-cert.secondary{background:var(--s2);color:var(--txt2);border:1px solid var(--border)}
+.btn-cert.secondary:hover{border-color:var(--green);color:var(--green)}
+.cert-id-txt{font-size:11px;color:var(--txt3);text-align:center;padding-bottom:24px;font-family:monospace;letter-spacing:.5px}
+
+@media(max-width:768px){
+  .login-left{display:none}.login-right{width:100%;padding:40px 24px}
+  .sidebar{width:60px;padding:12px 8px}.sidebar-section,.nav-item span,.nav-progress{display:none}
+  .nav-item{justify-content:center;padding:12px}.topbar-portal{display:none}
+  .hero-stats{display:none}.action-bar{flex-direction:column;align-items:flex-start}
+  .search-input{width:100%}
+}
+</style>
+</head>
+<body>
+
+<div id="loading-screen" class="loading-screen">
+  <div class="loading-logo">Facilita<span>Class</span></div>
+  <div class="spinner"></div>
+  <div class="loading-txt">Portal do Colaborador</div>
+</div>
+
+<div id="login-screen">
+  <div class="login-left">
+    <div class="login-logo">Facilita<span>Class</span></div>
+    <div class="login-tagline">Portal do Colaborador</div>
+    <div class="login-portal-label"><span class="dot"></span> Acesso Colaborador</div>
+    <div class="login-illustration">
+      <div class="feat-pill"><div class="icon"><svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div><span>Vídeos de treinamento</span></div>
+      <div class="feat-pill"><div class="icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><span>Materiais em PDF</span></div>
+      <div class="feat-pill"><div class="icon"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><span>Marque seu progresso</span></div>
+    </div>
+  </div>
+  <div class="login-right">
+    <h2>ÁREA DO COLABORADOR</h2>
+    <p class="sub">Entre com suas credenciais de acesso</p>
+    <div class="badge-col">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg>
+      Colaborador
+    </div>
+    <div class="form-group">
+      <label>Login (CPF ou código)</label>
+      <input type="text" id="student-user" placeholder="CPF ou código de acesso" oninput="maskCPF(this)" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="student-pass" placeholder="Digite sua senha" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-primary" id="btn-login" onclick="doLogin()">Entrar →</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<div id="app-screen" style="flex-direction:column">
+  <div class="topbar">
+    <div class="topbar-logo">Facilita<span>Class</span></div>
+    <span class="topbar-portal">Portal do Colaborador</span>
+    <div class="topbar-user">
+      <div class="rt-live"><span class="rt-live-dot"></span>Tempo Real</div>
+      <div class="user-badge"><div class="user-dot"></div><span id="topbar-name">Colaborador</span></div>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+  <div class="main-body">
+    <div class="sidebar">
+      <div class="sidebar-section">Menu</div>
+      <div class="nav-item active" id="nav-library" onclick="showLibrary()">
+        <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        <span>Biblioteca</span>
+      </div>
+      <div class="nav-item" id="nav-doubts" onclick="showMyDoubts()" style="margin-top:4px">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span>Minhas Dúvidas</span>
+        <span class="sidebar-notif-dot" id="sidebar-notif-dot"></span>
+      </div>
+      <div class="nav-progress">
+        <div class="progress-label">Meu Progresso</div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" id="sidebar-progress" style="width:0%"></div></div>
+        <div class="progress-pct" id="sidebar-pct">0%</div>
+      </div>
+    </div>
+    <div class="content" id="page-content"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-viewer">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="view-title">Material</h3>
+      <button class="modal-close" onclick="closeViewer()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="viewer-body" id="viewer-content"></div>
+    <div class="mark-bar" id="mark-bar">
+      <span class="info" id="mark-info">Marque quando finalizar</span>
+      <button class="btn-mark" id="btn-mark" onclick="markWatched()">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Marcar como assistido / visto
+      </button>
+    </div>
+    <div class="notes-panel" id="notes-panel">
+      <div class="notes-panel-head">
+        <label>
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Minhas Anotações
+        </label>
+        <button class="notes-toggle-btn" id="notes-toggle-btn" onclick="toggleNotesPanel()">
+          <svg id="notes-chevron" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+          <span id="notes-toggle-label">Recolher</span>
+        </button>
+      </div>
+      <div class="notes-body" id="notes-body">
+        <textarea class="notes-textarea" id="notes-textarea" placeholder="Anote aqui enquanto assiste ao vídeo ou lê o PDF... Suas anotações ficam salvas por material." oninput="onNotesInput()" maxlength="3000"></textarea>
+        <div class="notes-footer">
+          <button class="notes-save-btn" id="notes-save-btn" onclick="saveNotes()">
+            <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Salvar
+          </button>
+          <span class="notes-status" id="notes-status"></span>
+          <span class="notes-char" id="notes-char">0 / 3000</span>
+        </div>
+      </div>
+    </div>
+<div class="doubt-panel" id="doubt-panel">
+      <div class="doubt-panel-head">
+        <label>
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Canal de Dúvidas
+        </label>
+        <button class="notes-toggle-btn" onclick="toggleDoubtPanel()" id="doubt-toggle-btn">
+          <svg id="doubt-chevron" viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="18 15 12 9 6 15"/></svg>
+          <span id="doubt-toggle-label">Recolher</span>
+        </button>
+      </div>
+      <div id="doubt-body">
+        <div class="doubt-history" id="doubt-history"></div>
+        <textarea class="doubt-textarea" id="doubt-textarea" placeholder="Ficou com dúvida sobre este material? Envie sua pergunta — o administrador responderá aqui." maxlength="1000"></textarea>
+        <button class="doubt-send-btn" id="doubt-send-btn" onclick="sendDoubt()">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Enviar dúvida
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cert-overlay" id="cert-overlay">
+  <div class="cert-modal">
+    <div class="cert-confetti"></div>
+    <div class="cert-top">
+      <div class="cert-trophy">
+        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <h2>PARABÉNS!</h2>
+      <p>Você concluiu todos os materiais de treinamento<br>disponíveis na plataforma.</p>
+      <div class="cert-stats-row">
+        <div class="cert-stat"><div class="cv" id="cert-count">0</div><div class="cl">Materiais</div></div>
+        <div class="cert-stat"><div class="cv">100%</div><div class="cl">Concluído</div></div>
+        <div class="cert-stat"><div class="cv" id="cert-date">—</div><div class="cl">Data</div></div>
+      </div>
+    </div>
+    <div class="cert-actions">
+      <button class="btn-cert primary" id="btn-download-cert" onclick="generateCertificate()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Baixar meu certificado (PDF)
+      </button>
+      <button class="btn-cert secondary" onclick="closeCertModal()">Fechar</button>
+    </div>
+    <div class="cert-id-txt" id="cert-id-display"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="t-dot ok" id="toast-dot"></div><span id="toast-msg"></span></div>
+
+<script>
+const S = {
+  user: null, materials: [], progress: {},
+  db: null, firebaseOk: false,
+  materialsListener: null, progressListener: null,
+  certificate: null, certChecked: false, certModalShown: false,
+  currentMaterialId: null,
+  notesOpen: true, notesDirty: false, notesSaveTimer: null,
+  doubtOpen: true, activeCategoryFilter: 'all',
+  questionsListener: null, answeredNotifs: [], notifDismissed: false,
+  videoTimestamps: {}
+};
+
+(function initFirebase(){
+  const cfg = {
+    apiKey:"AIzaSyD6-t4lcHkgBFa_rBplGfa5838XeinaGAE",
+    authDomain:"facilitaclass-b2d76.firebaseapp.com",
+    projectId:"facilitaclass-b2d76",
+    storageBucket:"facilitaclass-b2d76.firebasestorage.app",
+    messagingSenderId:"425346397754",
+    appId:"1:425346397754:web:be7fa11e3bdf88f05f2703",
+    databaseURL:"https://facilitaclass-b2d76-default-rtdb.firebaseio.com"
+  };
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    S.db = firebase.database();
+    S.firebaseOk = true;
+  }catch(e){ console.error(e); }
+})();
+
+function $(id){ return document.getElementById(id); }
+function toast(msg,type='ok'){
+  $('toast-msg').textContent=msg;
+  $('toast-dot').className='t-dot '+(type==='ok'?'ok':'err');
+  const t=$('toast'); t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+function openModal(id){$(id).classList.add('show')}
+function closeModal(id){$(id).classList.remove('show')}
+function maskCPF(el){
+  let v=el.value.replace(/\D/g,'');
+  if(v.length<=11) v=v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  el.value=v;
+}
+function fmtDate(ts){ return ts ? new Date(ts).toLocaleDateString('pt-BR') : ''; }
+function fmtDateTime(ts){ return ts ? new Date(ts).toLocaleString('pt-BR') : ''; }
+
+// ── AUTH ──
+async function doLogin(){
+  const raw=$('student-user').value.trim();
+  const user=raw.replace(/\D/g,'')||raw;
+  const pass=$('student-pass').value.trim();
+  const errEl=$('login-err'); errEl.style.display='none';
+  if(!user||!pass){toast('Preencha login e senha','err');return;}
+  if(!S.firebaseOk){toast('Erro de conexão','err');return;}
+  const btn=$('btn-login'); btn.textContent='Verificando...'; btn.disabled=true;
+  try{
+    const snap=await S.db.ref('students').orderByChild('login').equalTo(user).get();
+    if(!snap.exists()){errEl.style.display='block';errEl.textContent='Colaborador não encontrado.';btn.textContent='Entrar →';btn.disabled=false;return;}
+    let found=null;
+    snap.forEach(c=>{const d=c.val();if(d.login===user)found={id:c.key,...d};});
+    if(!found||found.password!==pass){errEl.style.display='block';errEl.textContent='Senha incorreta.';btn.textContent='Entrar →';btn.disabled=false;return;}
+    S.user=found;
+    enterApp();
+  }catch(e){toast('Erro ao conectar','err');btn.textContent='Entrar →';btn.disabled=false;}
+}
+
+function enterApp(){
+  $('login-screen').style.display='none';
+  $('app-screen').style.display='flex';
+  $('topbar-name').textContent=S.user.name||'Colaborador';
+  startListeners();
+}
+
+function doLogout(){
+  stopListeners();
+  S.user=null;S.materials=[];S.progress={};S.currentMaterialId=null;
+  $('app-screen').style.display='none';
+  $('student-user').value='';$('student-pass').value='';
+  $('login-err').style.display='none';
+  const btn=$('btn-login');btn.textContent='Entrar →';btn.disabled=false;
+  $('login-screen').style.display='flex';
+}
+
+// ── LISTENERS ──
+function startListeners(){
+  if(!S.firebaseOk) return;
+
+  const matRef=S.db.ref('materials');
+  matRef.orderByChild('createdAt').on('value',snap=>{
+    const arr=[];
+    snap.forEach(c=>arr.unshift({id:c.key,...c.val()}));
+    S.materials=arr;
+    renderLibrary();
+  });
+  S.materialsListener=()=>matRef.off();
+
+  const progRef=S.db.ref('progress/'+S.user.id);
+  progRef.on('value',snap=>{
+    S.progress=snap.val()||{};
+    renderLibrary();
+    updateSidebarProgress();
+  });
+  S.progressListener=()=>progRef.off();
+
+  // Certificado: carrega uma vez para saber se já foi emitido
+  S.db.ref('certificates/'+S.user.id).once('value',snap=>{
+    S.certificate=snap.val()||null;
+    S.certChecked=true;
+  });
+
+  // NOTIFICAÇÕES — ouve dúvidas próprias em tempo real p/ detectar respostas
+  const qRef = S.db.ref('questions').orderByChild('studentId').equalTo(S.user.id);
+  qRef.on('value', snap => {
+    const answered = [];
+    snap.forEach(c => { const d=c.val(); if(d.answer && d.studentId===S.user.id) answered.push({id:c.key,...d}); });
+    // Carrega timestamps de notificações já vistas
+    const seenKey = 'fc_seen_' + S.user.id;
+    const seen = JSON.parse(localStorage.getItem(seenKey)||'[]');
+    const newAnswers = answered.filter(q => !seen.includes(q.id));
+    S.answeredNotifs = newAnswers;
+    renderNotifBanner();
+  });
+  S.questionsListener = () => qRef.off();
+}
+
+function stopListeners(){
+  if(S.materialsListener){S.materialsListener();S.materialsListener=null;}
+  if(S.progressListener){S.progressListener();S.progressListener=null;}
+  S.certificate=null; S.certChecked=false; S.certModalShown=false;
+  if(S.questionsListener){S.questionsListener();S.questionsListener=null;}
+  S.answeredNotifs=[];
+}
+
+// ── PROGRESS ──
+function updateSidebarProgress(){
+  if(!S.materials.length){$('sidebar-progress').style.width='0%';$('sidebar-pct').textContent='0%';return;}
+  const done=S.materials.filter(m=>S.progress[m.id]).length;
+  const pct=Math.round(done/S.materials.length*100);
+  $('sidebar-progress').style.width=pct+'%';
+  $('sidebar-pct').textContent=pct+'%';
+
+  // Dispara certificado ao atingir 100% pela primeira vez
+  if(pct===100 && S.certChecked && !S.certificate && !S.certModalShown){
+    S.certModalShown=true;
+    setTimeout(showCertificateModal, 600);
+  }
+}
+
+// ── RENDER LIBRARY ──
+function renderLibrary(){
+  const el=$('page-content'); if(!el) return;
+  const now=Date.now();
+  const isNew=ts=>ts&&(now-ts)<7*24*60*60*1000;
+  const done=S.materials.filter(m=>S.progress[m.id]).length;
+  const pct=S.materials.length?Math.round(done/S.materials.length*100):0;
+
+  el.innerHTML=`
+  <div class="student-hero">
+    <div class="hero-left">
+      <div class="hero-label">Bem-vindo de volta</div>
+      <h2>${S.user.name||'Colaborador'}</h2>
+      <div class="store-tag">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        ${S.user.store||'Sem loja'}
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hval">${S.materials.length}</div><div class="hlbl">Materiais</div></div>
+      <div class="hero-stat"><div class="hval">${done}</div><div class="hlbl">Concluídos</div></div>
+      <div class="hero-stat"><div class="hval">${pct}%</div><div class="hlbl">Progresso</div></div>
+    </div>
+  </div>
+  <div class="notif-banner" id="notif-banner">
+    <div class="notif-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+    <div class="notif-body">
+      <div class="notif-title" id="notif-title">Você tem respostas novas!</div>
+      <div class="notif-sub" id="notif-sub">Clique para ver as respostas do administrador</div>
+    </div>
+    <button class="notif-close" onclick="dismissNotif(event)">✕</button>
+  </div>
+  ${buildCatProgress()}
+  <div class="page-header">
+    <h2>BIBLIOTECA DE MATERIAIS</h2>
+    <p>Treinamentos disponíveis — marque cada um ao finalizar</p>
+  </div>
+  <div class="action-bar">
+    <input class="search-input" placeholder="Buscar material..." oninput="searchMaterials(this.value)" id="search-input">
+    <select class="filter-select" onchange="filterType(this.value)" id="filter-type">
+      <option value="all">Todos os tipos</option>
+      <option value="video">Vídeos</option>
+      <option value="pdf">PDFs</option>
+    </select>
+    <button class="filter-btn" id="filter-pending" onclick="toggleFilterPending()">Não concluídos</button>
+  </div>
+  <div class="filter-chip-row" id="cat-filter-row">
+    <span style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;align-self:center">Categoria:</span>
+    <button class="filter-chip active" data-cat="all" onclick="filterByCategory(this)">Todas</button>
+    <button class="filter-chip" data-cat="atendimento" onclick="filterByCategory(this)">📞 Atendimento</button>
+    <button class="filter-chip" data-cat="produto" onclick="filterByCategory(this)">📦 Produto</button>
+    <button class="filter-chip" data-cat="seguranca" onclick="filterByCategory(this)">🔒 Segurança</button>
+    <button class="filter-chip" data-cat="operacional" onclick="filterByCategory(this)">⚙️ Operacional</button>
+    <button class="filter-chip" data-cat="rh" onclick="filterByCategory(this)">👥 RH</button>
+    <button class="filter-chip" data-cat="outro" onclick="filterByCategory(this)">📌 Outro</button>
+  </div>
+  ${S.materials.length
+    ?`<div class="cards-grid" id="mat-grid">${S.materials.map(m=>matCard(m,isNew(m.createdAt))).join('')}</div>`
+    :`<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg><p>Nenhum material disponível no momento.</p></div>`}
+  `;
+  updateSidebarProgress();
+}
+
+let filterPendingActive=false;
+function toggleFilterPending(){
+  filterPendingActive=!filterPendingActive;
+  $('filter-pending').classList.toggle('active',filterPendingActive);
+  applyFilters();
+}
+
+function searchMaterials(q){ applyFilters(q); }
+function filterType(v){ applyFilters(undefined,v); }
+
+function applyFilters(q,typeVal){
+  const grid=$('mat-grid'); if(!grid) return;
+  const searchQ=q!==undefined?q:($('search-input')?$('search-input').value:'');
+  const typeV=typeVal!==undefined?typeVal:($('filter-type')?$('filter-type').value:'all');
+  const now=Date.now(); const isNew=ts=>ts&&(now-ts)<7*24*60*60*1000;
+  let filtered=S.materials;
+  if(typeV!=='all') filtered=filtered.filter(m=>m.type===typeV);
+  if(filterPendingActive) filtered=filtered.filter(m=>!S.progress[m.id]);
+  if(searchQ){
+    const q=searchQ.toLowerCase();
+    filtered=filtered.filter(m=>{
+      if(m.title.toLowerCase().includes(q)) return true;
+      if((m.description||'').toLowerCase().includes(q)) return true;
+      if((m.category||'').toLowerCase().includes(q)) return true;
+      const catLabel=(CAT_LABELS_C[m.category]||'').toLowerCase();
+      if(catLabel.includes(q)) return true;
+      if((m.tags||[]).some(t=>t.toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }
+  if(S.activeCategoryFilter && S.activeCategoryFilter!=='all') filtered=filtered.filter(m=>(m.category||'outro')===S.activeCategoryFilter);
+  grid.innerHTML=filtered.length
+    ?filtered.map(m=>matCard(m,isNew(m.createdAt))).join('')
+    :`<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--txt3);font-size:14px">Nenhum resultado.</div>`;
+}
+
+function matCard(m,isNew=false){
+  const isV=m.type==='video';
+  const prog=S.progress[m.id];
+  const iconSvg=isV
+    ?`<svg class="main-icon" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>`
+    :`<svg class="main-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+  const watchedHtml=prog?`<div class="watched-overlay"><div class="watched-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div></div>`:'';
+  const watchedInfo=prog?`<div class="watched-info"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>${isV?'Assistido':'Visualizado'} em ${fmtDate(prog.at)}</div>`:'';
+  return `<div class="material-card${prog?' watched':''}">
+    <div class="card-thumb ${isV?'vid':'pdf'}">
+      ${iconSvg}
+      <div class="type-badge ${isV?'v':'p'}">${isV?'VIDEO':'PDF'}</div>
+      ${isNew&&!prog?`<div class="new-badge">NOVO</div>`:''}
+      ${watchedHtml}
+    </div>
+    <div class="card-body">
+      <h3>${m.title}</h3>
+      <p>${m.description||'Sem descrição.'}</p>
+      ${watchedInfo}
+      ${m.category ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px">${catChipColab(m.category)}${(m.tags||[]).slice(0,2).map(t=>`<span style="font-size:10px;color:var(--txt3);background:var(--s2);padding:2px 8px;border-radius:50px;border:1px solid var(--border)">${t}</span>`).join('')}</div>` : ''}
+    </div>
+    <div class="card-footer">
+      <span class="date">${fmtDate(m.createdAt)}</span>
+      <button class="btn-sm${prog?' watched-btn':''}" onclick="viewMaterial('${m.id}')">
+        ${prog?(isV?'Reassistir':'Rever'):'Acessar'}
+      </button>
+    </div>
+  </div>`;
+}
+
+// ── VIEWER ──
+async function recordView(id){
+  if(!S.firebaseOk||!S.user) return;
+  const ref=S.db.ref('views/'+S.user.id+'/'+id);
+  const snap=await ref.once('value');
+  if(!snap.exists()){
+    const m=S.materials.find(x=>x.id===id); if(!m) return;
+    await ref.set({ viewedAt:Date.now(), marked:false, markedAt:null, type:m.type });
+  }
+}
+
+// ─── Normaliza URLs de vídeo (YouTube + Google Drive + Vimeo) ───
+function normalizeVideoUrl(url){
+  if(!url) return { type:'raw', url };
+  if(url.includes('youtube.com/watch') || url.includes('youtu.be/')){
+    const embed = url.replace('watch?v=','embed/').replace('youtu.be/','www.youtube.com/embed/').split('&')[0];
+    return { type:'iframe', url: embed };
+  }
+  if(url.includes('youtube.com/embed')) return { type:'iframe', url };
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if(driveMatch) return { type:'iframe', url:`https://drive.google.com/file/d/${driveMatch[1]}/preview` };
+  const driveOpen = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if(driveOpen) return { type:'iframe', url:`https://drive.google.com/file/d/${driveOpen[1]}/preview` };
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if(vimeoMatch) return { type:'iframe', url:`https://player.vimeo.com/video/${vimeoMatch[1]}` };
+  return { type:'raw', url };
+}
+
+function viewMaterial(id){
+  const m=S.materials.find(x=>x.id===id); if(!m) return;
+  S.currentMaterialId=id;
+  recordView(id);
+  $('view-title').textContent=m.title.toUpperCase();
+  const prog=S.progress[id];
+  const isV=m.type==='video';
+
+  let html=`<div class="viewer-player">`;
+  if(isV){
+    const {type, url} = normalizeVideoUrl(m.url);
+    if(type==='iframe'){
+      html+=`<iframe src="${url}" allowfullscreen></iframe>`;
+    } else {
+      html+=`<video controls src="${url}" id="main-video" onended="autoMarkWatched()" ontimeupdate="saveVideoTimestamp()"></video>`;
+    }
+  } else { html+=`<iframe class="pdf-embed" src="${m.url}#toolbar=1"></iframe>`; }
+  html+=`</div><div class="resume-bar" id="resume-bar"><div class="resume-bar-txt">Você estava em <strong id="resume-time">0:00</strong></div><button class="resume-btn" onclick="resumeVideo()">Continuar de onde parou</button><button class="resume-skip" onclick="dismissResume()">Começar do início</button></div><div class="viewer-info"><h2>${m.title}</h2><p style="margin-top:10px">${m.description||'Sem descrição.'}</p>`;
+  if(m.createdAt) html+=`<p style="margin-top:10px;font-size:11px;color:var(--txt3)">Publicado em ${fmtDate(m.createdAt)}</p>`;
+  if(prog) html+=`<p style="margin-top:8px;font-size:12px;color:var(--green)">✓ ${isV?'Assistido':'Visualizado'} em ${fmtDateTime(prog.at)}</p>`;
+  html+=`</div>`;
+
+  $('viewer-content').innerHTML=html;
+
+  // Mark bar
+  const markInfo=$('mark-info');
+  const btnMark=$('btn-mark');
+  if(prog){
+    markInfo.innerHTML=`<strong>✓ ${isV?'Assistido':'Visualizado'}</strong> em ${fmtDateTime(prog.at)}`;
+    btnMark.className='btn-mark done';
+    btnMark.innerHTML=`<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Já ${isV?'assistido':'visualizado'}`;
+    btnMark.onclick=null;
+  } else {
+    markInfo.innerHTML=isV?'Clique ao terminar de assistir':'Clique ao terminar de ler o PDF';
+    btnMark.className='btn-mark';
+    btnMark.innerHTML=`<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Marcar como ${isV?'assistido':'visto'}`;
+    btnMark.onclick=markWatched;
+  }
+
+  openModal('modal-viewer');
+  loadNotes(id);
+  loadDoubts(id);
+  // Resume só funciona em vídeo direto (raw), não em iframe
+  const {type: vtype} = normalizeVideoUrl(m.url||'');
+  if(m.type==='video' && vtype==='raw'){
+    checkVideoResume(id);
+  }
+}
+
+function autoMarkWatched(){ if(S.currentMaterialId&&!S.progress[S.currentMaterialId]) markWatched(); }
+
+async function markWatched(){
+  const id=S.currentMaterialId; if(!id) return;
+  if(S.progress[id]) return;
+  if(!S.firebaseOk){toast('Sem conexão','err');return;}
+  const m=S.materials.find(x=>x.id===id); if(!m) return;
+  const isV=m.type==='video';
+  const entry={
+    at:Date.now(),
+    materialId:id,
+    materialTitle:m.title,
+    type:m.type,
+    studentId:S.user.id,
+    studentName:S.user.name,
+    studentLogin:S.user.login,
+    store:S.user.store||''
+  };
+  try{
+    await S.db.ref('progress/'+S.user.id+'/'+id).set(entry);
+
+    // Sincroniza com o caminho lido pelo painel admin (views/)
+    const viewRef=S.db.ref('views/'+S.user.id+'/'+id);
+    const existing=await viewRef.once('value');
+    const viewedAt=existing.exists()&&existing.val().viewedAt ? existing.val().viewedAt : Date.now();
+    await viewRef.set({ viewedAt, marked:true, markedAt:Date.now(), type:m.type });
+
+    toast(isV?'Marcado como assistido! ✓':'Marcado como visto! ✓','ok');
+    // atualiza mark bar
+    const btnMark=$('btn-mark');
+    const markInfo=$('mark-info');
+    if(btnMark&&markInfo){
+      markInfo.innerHTML=`<strong>✓ ${isV?'Assistido':'Visualizado'}</strong> agora`;
+      btnMark.className='btn-mark done';
+      btnMark.innerHTML=`<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Já ${isV?'assistido':'visualizado'}`;
+      btnMark.onclick=null;
+    }
+  }catch(e){ toast('Erro ao salvar: '+e.message,'err'); }
+}
+
+function closeViewer(){
+  closeModal('modal-viewer');
+  $('viewer-content').innerHTML='';
+  S.currentMaterialId=null;
+  // limpa notas
+  if(S.notesSaveTimer){ clearTimeout(S.notesSaveTimer); S.notesSaveTimer=null; }
+  $('notes-textarea').value='';
+  $('notes-char').textContent='0 / 3000';
+  $('notes-status').className='notes-status';
+  $('notes-status').innerHTML='';
+  S.notesDirty=false;
+  $('doubt-textarea').value='';
+  $('doubt-history').innerHTML='';
+  // Salva timestamp final do vídeo
+  const vid = document.getElementById('main-video');
+  if(vid && S.currentMaterialId && vid.currentTime > 5){
+    S.videoTimestamps[S.currentMaterialId] = vid.currentTime;
+    if(S.firebaseOk && S.user)
+      S.db.ref('video_ts/'+S.user.id+'/'+S.currentMaterialId).set({ts:vid.currentTime, savedAt:Date.now()});
+  }
+}
+
+// ── CERTIFICADO ──
+function showCertificateModal(){
+  const done=S.materials.length;
+  const today=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+  $('cert-count').textContent=done;
+  $('cert-date').textContent=today;
+  $('cert-id-display').textContent='';
+  $('btn-download-cert').disabled=false;
+  $('btn-download-cert').textContent='';
+  $('btn-download-cert').innerHTML=`<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Baixar meu certificado (PDF)`;
+  $('cert-overlay').classList.add('show');
+}
+
+function closeCertModal(){
+  $('cert-overlay').classList.remove('show');
+}
+
+async function generateCertificate(){
+  if(!window.jspdf){toast('Biblioteca de PDF não carregada','err');return;}
+  const btn=$('btn-download-cert');
+  btn.disabled=true;
+  btn.innerHTML='Gerando PDF...';
+
+  try{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    const W=297,H=210;
+
+    // Fundo
+    doc.setFillColor(8,8,8);
+    doc.rect(0,0,W,H,'F');
+
+    // Borda externa
+    doc.setDrawColor(42,42,42);
+    doc.setLineWidth(0.5);
+    doc.rect(8,8,W-16,H-16);
+
+    // Borda interna verde
+    doc.setDrawColor(34,197,94);
+    doc.setLineWidth(0.2);
+    doc.rect(13,13,W-26,H-26);
+
+    // Logo
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(26);
+    doc.setTextColor(34,197,94);
+    doc.text('FACILITA',W/2-2,34,{align:'right'});
+    doc.setTextColor(240,240,240);
+    doc.text('CLASS',W/2+1,34,{align:'left'});
+
+    // Subtítulo
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8);
+    doc.setTextColor(80,80,80);
+    doc.text('CERTIFICADO DE CONCLUSÃO',W/2,42,{align:'center'});
+
+    // Linha divisória
+    doc.setDrawColor(42,42,42);
+    doc.setLineWidth(0.3);
+    doc.line(50,46,W-50,46);
+
+    // Certifica que
+    doc.setFontSize(11);
+    doc.setTextColor(120,120,120);
+    doc.text('Certificamos que',W/2,60,{align:'center'});
+
+    // Nome
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(28);
+    doc.setTextColor(240,240,240);
+    doc.text((S.user.name||'Colaborador').toUpperCase(),W/2,75,{align:'center'});
+
+    // Loja
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+    doc.setTextColor(120,120,120);
+    doc.text(S.user.store||'',W/2,83,{align:'center'});
+
+    // Texto corpo
+    doc.setFontSize(11);
+    doc.setTextColor(153,153,153);
+    doc.text('concluiu com êxito todos os materiais de treinamento disponibilizados na plataforma FacilitaClass.',W/2,97,{align:'center',maxWidth:220});
+
+    // Caixa do programa
+    doc.setDrawColor(58,58,58);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(W/2-65,108,130,12,2,2);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(10);
+    doc.setTextColor(240,240,240);
+    doc.text('Programa de Treinamento FacilitaClass',W/2,116,{align:'center'});
+
+    // Stats
+    const done=S.materials.length;
+    const dateStr=new Date().toLocaleDateString('pt-BR');
+    const cols=[W/2-42,W/2,W/2+42];
+    const vals=[String(done),'100%',dateStr];
+    const lbls=['MATERIAIS','CONCLUÍDO','DATA'];
+    cols.forEach((x,i)=>{
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(i===2?10:18);
+      doc.setTextColor(34,197,94);
+      doc.text(vals[i],x,140,{align:'center'});
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(7);
+      doc.setTextColor(80,80,80);
+      doc.text(lbls[i],x,146,{align:'center'});
+    });
+
+    // Linha assinaturas
+    doc.setDrawColor(42,42,42);
+    doc.setLineWidth(0.3);
+    doc.line(30,162,W-30,162);
+
+    const sigX=[W/2-70,W/2+70];
+    const sigNames=['Administrador','FacilitaClass'];
+    const sigRoles=['Gestor de Treinamentos','Plataforma de Ensino'];
+    sigX.forEach((x,i)=>{
+      doc.setDrawColor(58,58,58);
+      doc.line(x-30,178,x+30,178);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(9);
+      doc.setTextColor(240,240,240);
+      doc.text(sigNames[i],x,183,{align:'center'});
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(8);
+      doc.setTextColor(80,80,80);
+      doc.text(sigRoles[i],x,188,{align:'center'});
+    });
+
+    // ID do certificado
+    const yr=new Date().getFullYear();
+    const rand=String(Math.floor(Math.random()*9000)+1000);
+    const certId='FC-'+yr+'-'+rand;
+    doc.setFontSize(7);
+    doc.setTextColor(60,60,60);
+    doc.text('ID: '+certId,W/2,200,{align:'center'});
+
+    // Salva no Firebase
+    const certData={
+      certId, issuedAt:Date.now(),
+      studentId:S.user.id, studentName:S.user.name,
+      store:S.user.store||'', materialsCount:done
+    };
+    if(S.firebaseOk){
+      await S.db.ref('certificates/'+S.user.id).set(certData);
+      S.certificate=certData;
+    }
+
+    // Mostra ID no modal
+    $('cert-id-display').textContent='ID: '+certId;
+
+    // Download
+    const filename='certificado-facilitaclass-'+(S.user.name||'colaborador').replace(/\s+/g,'-').toLowerCase()+'.pdf';
+    doc.save(filename);
+    toast('Certificado baixado com sucesso! ✓','ok');
+
+    btn.innerHTML=`<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg> Certificado baixado!`;
+    btn.style.background='var(--green2)';
+    btn.disabled=false;
+
+  }catch(e){
+    toast('Erro ao gerar PDF: '+e.message,'err');
+    btn.disabled=false;
+    btn.innerHTML='Tentar novamente';
+  }
+}
+
+
+// ── CATEGORIA ──
+function catChipColab(cat){ return `<span class="cat-chip ${cat||'outro'}">${CAT_LABELS_C[cat]||cat}</span>`; }
+
+
+// ── NOTIFICAÇÕES DE RESPOSTA ──
+function renderNotifBanner(){
+  const n = S.answeredNotifs.length;
+  const dot = $('sidebar-notif-dot');
+  if(dot) dot.style.display = n>0 ? 'block' : 'none';
+  const banner = $('notif-banner');
+  if(!banner) return;
+  if(n>0 && !S.notifDismissed){
+    $('notif-title').textContent = n===1 ? 'Sua dúvida foi respondida!' : `${n} dúvidas foram respondidas!`;
+    $('notif-sub').textContent = n===1 ? 'O administrador respondeu uma das suas perguntas — clique para ver' : 'O administrador respondeu suas perguntas — clique para ver';
+    banner.classList.add('show');
+    banner.onclick = (e) => { if(!e.target.classList.contains('notif-close')){ dismissNotif(e); showMyDoubts(); } };
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+function dismissNotif(e){
+  e.stopPropagation();
+  S.notifDismissed = true;
+  // Marca como vistas no localStorage
+  const seenKey = 'fc_seen_' + S.user.id;
+  const seen = JSON.parse(localStorage.getItem(seenKey)||'[]');
+  S.answeredNotifs.forEach(q => { if(!seen.includes(q.id)) seen.push(q.id); });
+  localStorage.setItem(seenKey, JSON.stringify(seen));
+  S.answeredNotifs = [];
+  renderNotifBanner();
+}
+
+// ── PÁGINA MINHAS DÚVIDAS ──
+function showLibrary(){
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  $('nav-library').classList.add('active');
+  renderLibrary();
+}
+
+async function showMyDoubts(){
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  $('nav-doubts').classList.add('active');
+  const el=$('page-content'); if(!el) return;
+  el.innerHTML=`
+  <div class="page-header" style="margin-bottom:20px">
+    <h2>MINHAS DÚVIDAS</h2>
+    <p>Perguntas que você enviou — veja as respostas do administrador</p>
+  </div>
+  <div id="my-doubts-list" style="display:flex;flex-direction:column;gap:12px">
+    <div style="color:var(--txt3);font-size:13px;padding:20px 0">Carregando...</div>
+  </div>`;
+
+  if(!S.firebaseOk||!S.user) return;
+  // Marcar notificações como vistas
+  dismissAllNotifs();
+  try{
+    const snap=await S.db.ref('questions').orderByChild('studentId').equalTo(S.user.id).once('value');
+    const items=[];
+    snap.forEach(c=>{const d=c.val();if(d.studentId===S.user.id)items.push({id:c.key,...d});});
+    items.sort((a,b)=>b.createdAt-a.createdAt);
+    const list=$('my-doubts-list'); if(!list) return;
+    if(!items.length){
+      list.innerHTML='<div class="empty-state" style="padding:60px 20px"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><p>Nenhuma dúvida enviada ainda.</p></div>';
+      return;
+    }
+    list.innerHTML=items.map(q=>{
+      const mat=S.materials.find(m=>m.id===q.materialId);
+      return `<div style="background:var(--s1);border:1px solid ${q.answer?'rgba(34,197,94,.25)':'var(--border)'};border-radius:var(--r);overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Material</div>
+            <div style="font-size:13px;font-weight:600;color:var(--txt)">${mat?mat.title:'Material removido'}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--txt3)">${fmtDateTime(q.createdAt)}</span>
+            ${q.answer?'<span style="background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.25);border-radius:50px;padding:3px 10px;font-size:11px;font-weight:600">✓ Respondido</span>':'<span style="background:var(--s2);color:var(--txt3);border:1px solid var(--border);border-radius:50px;padding:3px 10px;font-size:11px">⏳ Pendente</span>'}
+          </div>
+        </div>
+        <div style="padding:14px 18px">
+          <div style="font-size:13px;color:var(--txt2);line-height:1.5;margin-bottom:${q.answer?'12px':'0'}">${q.text}</div>
+          ${q.answer?`<div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:var(--rs);padding:12px 14px">
+            <div style="font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:6px">Resposta do administrador</div>
+            <div style="font-size:13px;color:var(--txt);line-height:1.5">${q.answer}</div>
+            <div style="font-size:10px;color:var(--txt3);margin-top:6px">Respondido em ${fmtDateTime(q.answeredAt)}</div>
+          </div>`:''}
+        </div>
+        ${mat?`<div style="padding:0 18px 14px"><button onclick="viewMaterial('${mat.id}')" style="background:none;border:1px solid var(--border);color:var(--txt2);border-radius:var(--rs);padding:7px 14px;font-size:12px;cursor:pointer;font-family:var(--fb);transition:.2s" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--txt2)'">Abrir material</button></div>`:''}
+      </div>`;
+    }).join('');
+  }catch(e){
+    const list=$('my-doubts-list'); if(list) list.innerHTML='<div style="color:var(--red);font-size:13px">Erro ao carregar dúvidas.</div>';
+  }
+}
+
+function dismissAllNotifs(){
+  if(!S.user) return;
+  const seenKey='fc_seen_'+S.user.id;
+  const seen=JSON.parse(localStorage.getItem(seenKey)||'[]');
+  S.answeredNotifs.forEach(q=>{if(!seen.includes(q.id))seen.push(q.id);});
+  localStorage.setItem(seenKey,JSON.stringify(seen));
+  S.answeredNotifs=[];
+  S.notifDismissed=false;
+  renderNotifBanner();
+}
+
+// ── PROGRESSO POR CATEGORIA ──
+const CAT_ALL = ['atendimento','produto','seguranca','operacional','rh','outro'];
+const CAT_LABELS_C = { atendimento:'📞 Atendimento', produto:'📦 Produto', seguranca:'🔒 Segurança', operacional:'⚙️ Operacional', rh:'👥 RH', outro:'📌 Outro' };
+
+function buildCatProgress(){
+  const cats = CAT_ALL.filter(cat => S.materials.some(m=>(m.category||'outro')===cat));
+  if(cats.length < 2) return ''; // só mostra se tiver ≥2 categorias
+  const rows = cats.map(cat=>{
+    const total = S.materials.filter(m=>(m.category||'outro')===cat).length;
+    const done  = S.materials.filter(m=>(m.category||'outro')===cat && S.progress[m.id]).length;
+    const pct   = total>0 ? Math.round(done/total*100) : 0;
+    return `<div class="cat-prog-card ${cat}" onclick="filterByCategory(document.querySelector('[data-cat=${cat}]'))" style="cursor:pointer">
+      <div class="cat-prog-label">${CAT_LABELS_C[cat]}<span>${pct}%</span></div>
+      <div class="cat-prog-bar"><div class="cat-prog-fill" style="width:${pct}%"></div></div>
+      <div class="cat-prog-nums">${done}<span> / ${total}</span></div>
+    </div>`;
+  });
+  return `<div class="cat-progress-section">
+    <div class="cat-progress-section-title">Progresso por categoria</div>
+    <div class="cat-progress-grid">${rows.join('')}</div>
+  </div>`;
+}
+
+// ── RESUME DE VÍDEO ──
+function saveVideoTimestamp(){
+  const vid=document.getElementById('main-video');
+  if(!vid||!S.currentMaterialId) return;
+  if(vid.currentTime < 5 || vid.ended) return;
+  // Throttle: salva a cada 10s
+  const now=Date.now();
+  if(S._lastTsSave && now-S._lastTsSave < 10000) return;
+  S._lastTsSave=now;
+  S.videoTimestamps[S.currentMaterialId]=vid.currentTime;
+  if(S.firebaseOk&&S.user)
+    S.db.ref('video_ts/'+S.user.id+'/'+S.currentMaterialId).set({ts:vid.currentTime,savedAt:now});
+}
+
+async function checkVideoResume(materialId){
+  const bar=$('resume-bar'); if(!bar) return;
+  bar.classList.remove('show');
+  // Tenta memória local primeiro
+  let ts = S.videoTimestamps[materialId] || 0;
+  if(!ts && S.firebaseOk && S.user){
+    try{
+      const snap=await S.db.ref('video_ts/'+S.user.id+'/'+materialId).once('value');
+      if(snap.exists()) ts=snap.val().ts||0;
+    }catch(e){}
+  }
+  if(ts > 10){ // só mostra se mais de 10s
+    S._pendingResume=ts;
+    $('resume-time').textContent=fmtSeconds(ts);
+    bar.classList.add('show');
+  }
+}
+
+function resumeVideo(){
+  const vid=document.getElementById('main-video');
+  if(vid && S._pendingResume){ vid.currentTime=S._pendingResume; vid.play(); }
+  $('resume-bar').classList.remove('show');
+  S._pendingResume=0;
+}
+
+function dismissResume(){
+  $('resume-bar').classList.remove('show');
+  S._pendingResume=0;
+}
+
+function fmtSeconds(s){
+  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=Math.floor(s%60);
+  if(h>0) return h+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+  return m+':'+String(sec).padStart(2,'0');
+}
+
+function filterByCategory(btn){
+  if(!btn) return;
+  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  S.activeCategoryFilter = btn.dataset.cat;
+  applyFilters();
+}
+
+// ── CANAL DE DÚVIDAS ──
+async function loadDoubts(materialId){
+  const hist=$('doubt-history'); if(!hist) return;
+  hist.innerHTML='<span style="font-size:12px;color:var(--txt3)">Carregando...</span>';
+  if(!S.firebaseOk||!S.user){ hist.innerHTML=''; return; }
+  try{
+    const snap=await S.db.ref('questions').orderByChild('materialId').equalTo(materialId).once('value');
+    const items=[];
+    snap.forEach(c=>{ const d=c.val(); if(d.studentId===S.user.id) items.push({id:c.key,...d}); });
+    items.sort((a,b)=>b.createdAt-a.createdAt);
+    if(!items.length){ hist.innerHTML='<span style="font-size:12px;color:var(--txt3)">Nenhuma dúvida enviada para este material.</span>'; return; }
+    hist.innerHTML=items.map(q=>`
+      <div class="doubt-item">
+        <div class="dq">${q.text}</div>
+        <div class="dq-meta">Enviado em ${fmtDateTime(q.createdAt)}</div>
+        ${q.answer ? `<div class="doubt-answer"><div class="da-label">✓ Resposta</div><div class="da-txt">${q.answer}</div><div class="da-ts">Respondido em ${fmtDateTime(q.answeredAt)}</div></div>` : `<div style="margin-top:8px"><span class="doubt-pending">⏳ Aguardando resposta do administrador</span></div>`}
+      </div>`).join('');
+  }catch(e){ hist.innerHTML=''; }
+}
+
+async function sendDoubt(){
+  const ta=$('doubt-textarea');
+  const btn=$('doubt-send-btn');
+  const text=ta.value.trim();
+  if(!text){ toast('Digite sua dúvida antes de enviar','err'); return; }
+  if(!S.firebaseOk||!S.user){ toast('Sem conexão','err'); return; }
+  const m=S.materials.find(x=>x.id===S.currentMaterialId); if(!m) return;
+  btn.disabled=true;
+  try{
+    await S.db.ref('questions').push({
+      text, materialId:S.currentMaterialId, materialTitle:m.title,
+      studentId:S.user.id, studentName:S.user.name, store:S.user.store||'',
+      createdAt:Date.now(), answer:null, answeredAt:null
+    });
+    ta.value='';
+    toast('Dúvida enviada! O admin responderá em breve.','ok');
+    loadDoubts(S.currentMaterialId);
+  }catch(e){ toast('Erro ao enviar: '+e.message,'err'); }
+  btn.disabled=false;
+}
+
+function toggleDoubtPanel(){
+  S.doubtOpen=!S.doubtOpen;
+  $('doubt-body').style.display=S.doubtOpen?'':'none';
+  $('doubt-toggle-label').textContent=S.doubtOpen?'Recolher':'Expandir';
+  $('doubt-chevron').style.transform=S.doubtOpen?'':'rotate(180deg)';
+}
+
+// ── ANOTAÇÕES PESSOAIS ──
+async function loadNotes(materialId){
+  const ta=$('notes-textarea');
+  const st=$('notes-status');
+  const ch=$('notes-char');
+  ta.value=''; ch.textContent='0 / 3000'; st.className='notes-status'; st.innerHTML='';
+  S.notesDirty=false;
+  if(!S.firebaseOk||!S.user) return;
+  st.innerHTML='<svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Carregando...';
+  try{
+    const snap=await S.db.ref('notes/'+S.user.id+'/'+materialId).once('value');
+    if(snap.exists()&&snap.val().text){
+      ta.value=snap.val().text;
+      ch.textContent=ta.value.length+' / 3000';
+      const ts=snap.val().updatedAt;
+      st.className='notes-status saved';
+      st.innerHTML='<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Salvo em '+fmtDateTime(ts);
+    } else { st.innerHTML=''; }
+  }catch(e){ st.innerHTML=''; }
+}
+
+function onNotesInput(){
+  const ta=$('notes-textarea');
+  $('notes-char').textContent=ta.value.length+' / 3000';
+  S.notesDirty=true;
+  const st=$('notes-status');
+  st.className='notes-status'; st.innerHTML='Não salvo';
+  // Autosave após 3s de inatividade
+  if(S.notesSaveTimer) clearTimeout(S.notesSaveTimer);
+  S.notesSaveTimer=setTimeout(saveNotes,3000);
+}
+
+async function saveNotes(){
+  if(S.notesSaveTimer){ clearTimeout(S.notesSaveTimer); S.notesSaveTimer=null; }
+  if(!S.currentMaterialId||!S.firebaseOk||!S.user) return;
+  const ta=$('notes-textarea');
+  const st=$('notes-status');
+  const btn=$('notes-save-btn');
+  btn.disabled=true;
+  st.className='notes-status'; st.innerHTML='Salvando...';
+  try{
+    const now=Date.now();
+    await S.db.ref('notes/'+S.user.id+'/'+S.currentMaterialId).set({
+      text:ta.value,
+      updatedAt:now,
+      materialId:S.currentMaterialId,
+      studentId:S.user.id,
+      studentName:S.user.name
+    });
+    S.notesDirty=false;
+    st.className='notes-status saved';
+    st.innerHTML='<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Salvo em '+fmtDateTime(now);
+  }catch(e){
+    st.className='notes-status';
+    st.innerHTML='Erro ao salvar';
+    toast('Erro ao salvar anotação: '+e.message,'err');
+  }
+  btn.disabled=false;
+}
+
+function toggleNotesPanel(){
+  S.notesOpen=!S.notesOpen;
+  $('notes-body').style.display=S.notesOpen?'':'none';
+  $('notes-toggle-label').textContent=S.notesOpen?'Recolher':'Expandir';
+  $('notes-chevron').style.transform=S.notesOpen?'':'rotate(180deg)';
+}
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    $('loading-screen').style.display='none';
+    $('login-screen').style.display='flex';
+  },1100);
+});
+</script>
+</body>
+</html>
